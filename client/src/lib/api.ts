@@ -4,6 +4,7 @@ import type {
   CaseSubmissionRequest,
   IdentityBundle,
   IntentResolution,
+  MobilityIntelligenceSnapshot,
   ServiceDefinition
 } from '@parivahan/shared';
 
@@ -55,6 +56,14 @@ export function resolveIntent(query: string) {
 
 export function getWorkflow(serviceId: string) {
   return request<ServiceDefinition>(`/workflows/${encodeURIComponent(serviceId)}`);
+}
+
+export function getServices() {
+  return request<ServiceDefinition[]>('/services');
+}
+
+export function getMobilityIntelligence(userId: string) {
+  return request<MobilityIntelligenceSnapshot>(`/users/${encodeURIComponent(userId)}/mobility-intelligence`);
 }
 
 export function getCase(caseId: string) {

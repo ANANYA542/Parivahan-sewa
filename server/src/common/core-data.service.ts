@@ -42,6 +42,14 @@ export class CoreDataService {
     return copy(service);
   }
 
+  listServices(): ServiceDefinition[] {
+    return copy([...this.services].sort((first, second) => first.name.localeCompare(second.name)));
+  }
+
+  listUserIds(): string[] {
+    return this.users.map((user) => user.userId);
+  }
+
   getCase(caseId: string): CaseDetail {
     const caseRecord = this.cases.find((item) => item.caseId === caseId);
     if (!caseRecord) {

@@ -19,5 +19,26 @@ body {
     radial-gradient(circle at top, rgba(245, 158, 11, 0.15), transparent 38%),
     linear-gradient(180deg, #020617 0%, #0f172a 100%);
   color: #e5e7eb;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(245, 158, 11, 0.35);
+  color: #fff7ed;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(251, 191, 36, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 

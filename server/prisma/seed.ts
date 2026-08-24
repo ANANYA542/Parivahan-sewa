@@ -35,11 +35,15 @@ async function main() {
       update: {
         name: service.name,
         category: service.category,
+        description: service.description,
+        delivery: service.delivery,
+        officialUrl: service.officialUrl ?? null,
         steps: toJson(service.steps),
         requiredDocuments: toJson(service.requiredDocuments)
       },
       create: {
         ...service,
+        officialUrl: service.officialUrl ?? null,
         steps: toJson(service.steps),
         requiredDocuments: toJson(service.requiredDocuments)
       }

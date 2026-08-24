@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { CaseRecord, ServiceDefinition, SubmissionData, VehicleRecord } from '@parivahan/shared';
+import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
 
 interface GuidedNavigatorProps {
   service: ServiceDefinition | null;
@@ -18,6 +20,7 @@ function fieldIsComplete(field: string, values: Record<string, string>) {
 
 export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit }: GuidedNavigatorProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [values, setValues] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +32,45 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit }: G
     setError(null);
   }, [service?.serviceId]);
 
+  function goToStep(index: number) {
+    setDirection(index > currentStepIndex ? 1 : -1);
+    setCurrentStepIndex(index);
+  }
+
   if (!service) {
     return (
       <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
         <h2 className="text-xl font-semibold text-white">Guided Navigator</h2>
         <p className="mt-2 text-sm leading-6 text-slate-400">Use the Intent Assistant to select a service. Each journey then collects only the details required for that submission.</p>
       </section>
+    );
+  }
+
+  if (service.delivery === 'official_portal') {
+    return (
+      <motion.section
+        key={service.serviceId}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: DURATION.base, ease: EASE_OUT }}
+        className="rounded-3xl border border-white/10 bg-slate-900/70 p-6"
+      >
+        <h2 className="text-xl font-semibold text-white">Guided Navigator</h2>
+        <p className="mt-2 text-sm text-slate-400">{service.name}</p>
+        <p className="mt-5 text-sm leading-6 text-slate-300">{service.description}</p>
+        <p className="mt-3 text-sm leading-6 text-slate-400">This service is delivered through the official Parivahan portal. Availability and document requirements can vary by state and RTO.</p>
+        {service.officialUrl ? (
+          <motion.a
+            {...scaleTap}
+            href={service.officialUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 inline-flex rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950"
+          >
+            Open official service
+          </motion.a>
+        ) : null}
+      </motion.section>
     );
   }
 
@@ -87,74 +123,111 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit }: G
       </div>
 
       <div className="mt-6 flex gap-2 overflow-x-auto pb-1">
-        {activeService.steps.map((step, index) => (
-          <button
-            key={step.id}
-            type="button"
-            onClick={() => index <= currentStepIndex && setCurrentStepIndex(index)}
-            className={`min-w-max rounded-full px-3 py-1 text-xs ${index === currentStepIndex ? 'bg-amber-400 text-slate-950' : index < currentStepIndex ? 'bg-emerald-400/15 text-emerald-200' : 'bg-white/5 text-slate-500'}`}
-          >
-            {index + 1}. {step.title}
-          </button>
-        ))}
+        {activeService.steps.map((step, index) => {
+          const isActive = index === currentStepIndex;
+          const isDone = index < currentStepIndex;
+          return (
+            <button
+              key={step.id}
+              type="button"
+              onClick={() => index <= currentStepIndex && goToStep(index)}
+              className={`relative min-w-max rounded-full px-3 py-1 text-xs transition-colors duration-200 ${isActive ? 'text-slate-950' : isDone ? 'text-emerald-200' : 'text-slate-500'}`}
+            >
+              {isActive ? (
+                <motion.span layoutId="step-pill-active" className="absolute inset-0 rounded-full bg-amber-400" transition={{ duration: DURATION.base, ease: EASE_OUT }} />
+              ) : isDone ? (
+                <span className="absolute inset-0 rounded-full bg-emerald-400/15" />
+              ) : (
+                <span className="absolute inset-0 rounded-full bg-white/5" />
+              )}
+              <span className="relative">{index + 1}. {step.title}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {currentStep ? (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <h3 className="font-medium text-white">{currentStep.title}</h3>
-          {currentStep.id === 'preview' ? (
-            <div className="mt-4">
-              <p className="text-sm text-slate-300">Keep these ready before you begin:</p>
-              <ul className="mt-2 space-y-1 text-sm text-slate-400">
-                {activeService.requiredDocuments.map((document) => <li key={document}>{document}</li>)}
-              </ul>
-            </div>
+      <div className="relative mt-6 overflow-hidden">
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+          {currentStep ? (
+            <motion.div
+              key={currentStep.id}
+              custom={direction}
+              initial={{ opacity: 0, x: 24 * direction }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 * direction }}
+              transition={{ duration: DURATION.base, ease: EASE_OUT }}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4"
+            >
+              <h3 className="font-medium text-white">{currentStep.title}</h3>
+              {currentStep.id === 'preview' ? (
+                <div className="mt-4">
+                  <p className="text-sm text-slate-300">Keep these ready before you begin:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-slate-400">
+                    {activeService.requiredDocuments.map((document) => <li key={document}>{document}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+              <div className="mt-4 space-y-4">
+                {currentStep.fields.map((field) => {
+                  const isConfirmation = field === 'acknowledgement' || field === 'declaration';
+                  if (field === 'vehicleId') {
+                    return (
+                      <label key={field} className="block text-sm text-slate-200">
+                        Select vehicle
+                        <select value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none transition-colors duration-200 focus:border-amber-300">
+                          <option value="">Choose a linked vehicle</option>
+                          {vehicles.map((vehicle) => <option key={vehicle.vehicleId} value={vehicle.vehicleId}>{vehicle.registrationNumber} · {vehicle.vehicleType}</option>)}
+                        </select>
+                      </label>
+                    );
+                  }
+
+                  if (isConfirmation) {
+                    return (
+                      <label key={field} className="flex cursor-pointer items-start gap-3 text-sm text-slate-200">
+                        <input type="checkbox" checked={values[field] === 'true'} onChange={(event) => setField(field, String(event.target.checked))} className="mt-1 h-4 w-4 accent-amber-400" />
+                        <span>I confirm that the information provided is accurate.</span>
+                      </label>
+                    );
+                  }
+
+                  return (
+                    <label key={field} className="block text-sm text-slate-200">
+                      {formatField(field)}
+                      <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={field === 'attachments' ? 'Comma-separated file names' : `Enter ${formatField(field).toLowerCase()}`} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none transition-colors duration-200 placeholder:text-slate-500 focus:border-amber-300" />
+                    </label>
+                  );
+                })}
+              </div>
+            </motion.div>
           ) : null}
-          <div className="mt-4 space-y-4">
-            {currentStep.fields.map((field) => {
-              const isConfirmation = field === 'acknowledgement' || field === 'declaration';
-              if (field === 'vehicleId') {
-                return (
-                  <label key={field} className="block text-sm text-slate-200">
-                    Select vehicle
-                    <select value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-amber-300">
-                      <option value="">Choose a linked vehicle</option>
-                      {vehicles.map((vehicle) => <option key={vehicle.vehicleId} value={vehicle.vehicleId}>{vehicle.registrationNumber} · {vehicle.vehicleType}</option>)}
-                    </select>
-                  </label>
-                );
-              }
-
-              if (isConfirmation) {
-                return (
-                  <label key={field} className="flex cursor-pointer items-start gap-3 text-sm text-slate-200">
-                    <input type="checkbox" checked={values[field] === 'true'} onChange={(event) => setField(field, String(event.target.checked))} className="mt-1 h-4 w-4 accent-amber-400" />
-                    <span>I confirm that the information provided is accurate.</span>
-                  </label>
-                );
-              }
-
-              return (
-                <label key={field} className="block text-sm text-slate-200">
-                  {formatField(field)}
-                  <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={field === 'attachments' ? 'Comma-separated file names' : `Enter ${formatField(field).toLowerCase()}`} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none placeholder:text-slate-500 focus:border-amber-300" />
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+        </AnimatePresence>
+      </div>
 
       <div className="mt-5 flex items-center justify-between gap-3">
-        <button type="button" onClick={() => setCurrentStepIndex((index) => Math.max(0, index - 1))} disabled={currentStepIndex === 0 || isSubmitting} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 disabled:cursor-not-allowed disabled:opacity-40">Back</button>
+        <motion.button
+          {...scaleTap}
+          type="button"
+          onClick={() => goToStep(Math.max(0, currentStepIndex - 1))}
+          disabled={currentStepIndex === 0 || isSubmitting}
+          className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Back
+        </motion.button>
         {isLastStep ? (
-          <button type="button" onClick={() => void submit()} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? 'Submitting...' : 'Submit case'}</button>
+          <motion.button {...scaleTap} type="button" onClick={() => void submit()} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60">
+            {isSubmitting ? 'Submitting...' : 'Submit case'}
+          </motion.button>
         ) : (
-          <button type="button" onClick={() => setCurrentStepIndex((index) => Math.min(activeService.steps.length - 1, index + 1))} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60">Continue</button>
+          <motion.button {...scaleTap} type="button" onClick={() => goToStep(Math.min(activeService.steps.length - 1, currentStepIndex + 1))} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60">
+            Continue
+          </motion.button>
         )}
       </div>
-      {message ? <p className="mt-4 text-sm text-emerald-300">{message}</p> : null}
-      {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
+      <AnimatePresence>
+        {message ? <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-emerald-300">{message}</motion.p> : null}
+        {error ? <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-rose-300">{error}</motion.p> : null}
+      </AnimatePresence>
     </section>
   );
 }

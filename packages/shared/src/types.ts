@@ -31,10 +31,15 @@ export interface ServiceStep {
   fields: string[];
 }
 
+export type ServiceDelivery = 'guided' | 'official_portal';
+
 export interface ServiceDefinition {
   serviceId: string;
   name: string;
   category: string;
+  description: string;
+  delivery: ServiceDelivery;
+  officialUrl?: string;
   steps: ServiceStep[];
   requiredDocuments: string[];
 }
@@ -82,6 +87,58 @@ export interface StageHistoryItem {
 export interface MobilityScoreResult {
   score: number;
   reasons: string[];
+}
+
+export type AlertSeverity = 'critical' | 'warning' | 'info';
+
+export interface ComplianceAlert {
+  alertId: string;
+  severity: AlertSeverity;
+  title: string;
+  detail: string;
+  vehicleId?: string;
+  recommendedServiceId?: string;
+}
+
+export interface MobilityNudge {
+  nudgeId: string;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  actionServiceId?: string;
+}
+
+export type MobilityMapLayerId = 'accidents' | 'high-risk-zones' | 'safe-routes' | 'pollution-hotspots' | 'challan-zones';
+
+export interface MobilityMapFeature {
+  featureId: string;
+  geometry: {
+    type: 'Point' | 'LineString';
+    coordinates: number[] | number[][];
+  };
+  properties: {
+    title: string;
+    detail: string;
+    source: 'case-history' | 'reference-dataset';
+    severity?: AlertSeverity;
+  };
+}
+
+export interface MobilityMapLayer {
+  layerId: MobilityMapLayerId;
+  label: string;
+  color: string;
+  description: string;
+  features: MobilityMapFeature[];
+}
+
+export interface MobilityIntelligenceSnapshot {
+  userId: string;
+  computedAt: string;
+  score: MobilityScoreResult;
+  complianceAlerts: ComplianceAlert[];
+  nudges: MobilityNudge[];
+  mapLayers: MobilityMapLayer[];
 }
 
 export interface IdentityBundle {

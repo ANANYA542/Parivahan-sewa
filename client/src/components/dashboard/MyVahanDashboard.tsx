@@ -1,4 +1,6 @@
+import { motion } from 'framer-motion';
 import type { IdentityBundle } from '@parivahan/shared';
+import { fadeUp, staggerContainer } from '../../lib/motion';
 
 interface MyVahanDashboardProps {
   identity: IdentityBundle | null;
@@ -20,15 +22,15 @@ export function MyVahanDashboard({ identity }: MyVahanDashboardProps) {
       <p className="mt-2 text-sm text-slate-400">
         {vehicle ? `${vehicle.registrationNumber} · ${vehicle.vehicleType.replace('-', ' ')}` : 'Loading your linked vehicle records...'}
       </p>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <motion.div key={card.label} variants={fadeUp} className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{card.label}</div>
             <div className={`mt-2 text-lg font-medium ${card.value === 'expired' ? 'text-rose-300' : 'text-white'}`}>{card.value}</div>
-          </div>
+          </motion.div>
         ))}
         {identity && !vehicle ? <p className="text-sm text-slate-400">No linked vehicles found.</p> : null}
-      </div>
+      </motion.div>
     </section>
   );
 }

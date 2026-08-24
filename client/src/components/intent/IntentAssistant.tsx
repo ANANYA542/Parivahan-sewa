@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { IntentResolution } from '@parivahan/shared';
+import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
 
-const suggestions = ['Renew my PUC', 'Dispute a challan', 'Report an accident'];
+const suggestions = ['Renew my PUC', 'Renew my driving licence', 'Transfer vehicle ownership', 'Check a challan'];
 
 interface IntentAssistantProps {
   onResolve: (query: string) => Promise<IntentResolution>;
@@ -44,31 +46,55 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
               if (event.key === 'Enter') void submitIntent();
             }}
             placeholder="For example, my PUC has expired"
-            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-amber-300"
+            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none transition-colors duration-200 placeholder:text-slate-500 focus:border-amber-300"
           />
-          <button
+          <motion.button
+            {...scaleTap}
             type="button"
             onClick={() => void submitIntent()}
             disabled={isResolving || !query.trim()}
-            className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isResolving ? 'Finding...' : 'Continue'}
-          </button>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={isResolving ? 'finding' : 'continue'}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: DURATION.fast }}
+                className="inline-block"
+              >
+                {isResolving ? 'Finding...' : 'Continue'}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {suggestions.map((item) => (
-            <button key={item} type="button" onClick={() => void submitIntent(item)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-200 transition hover:border-amber-300/70">
+            <motion.button {...scaleTap} key={item} type="button" onClick={() => void submitIntent(item)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-200 transition-colors duration-200 hover:border-amber-300/70">
               {item}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
-      {result ? (
-        <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-sm text-emerald-100">
-          {result.clarificationNeeded ? 'I need a little more detail. Try mentioning PUC, challan, or accident.' : `Matched: ${result.serviceName} (${result.confidence} confidence). The journey is ready below.`}
-        </div>
-      ) : null}
-      {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
+      <AnimatePresence>
+        {result ? (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: DURATION.base, ease: EASE_OUT }}
+            className="mt-4 overflow-hidden rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-sm text-emerald-100"
+          >
+            {result.clarificationNeeded ? 'I need a little more detail. Try mentioning PUC, challan, or accident.' : `Matched: ${result.serviceName} (${result.confidence} confidence). The journey is ready below.`}
+          </motion.div>
+        ) : null}
+        {error ? (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-rose-300">
+            {error}
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
     </section>
   );
 }

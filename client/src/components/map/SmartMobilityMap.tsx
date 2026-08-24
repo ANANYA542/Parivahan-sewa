@@ -1,17 +1,80 @@
-const overlays = ['Accidents', 'High-risk zones', 'Safe routes', 'Pollution hotspots', 'Challan zones'];
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { CircleMarker, MapContainer, Popup, Polyline, TileLayer } from 'react-leaflet';
+import type { MobilityMapFeature, MobilityMapLayer } from '@parivahan/shared';
+import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
+import 'leaflet/dist/leaflet.css';
 
-export function SmartMobilityMap() {
+interface SmartMobilityMapProps {
+  layers: MobilityMapLayer[];
+}
+
+function isPoint(feature: MobilityMapFeature): feature is MobilityMapFeature & { geometry: { type: 'Point'; coordinates: number[] } } {
+  return feature.geometry.type === 'Point';
+}
+
+function isLine(feature: MobilityMapFeature): feature is MobilityMapFeature & { geometry: { type: 'LineString'; coordinates: number[][] } } {
+  return feature.geometry.type === 'LineString';
+}
+
+export function SmartMobilityMap({ layers }: SmartMobilityMapProps) {
+  const [visibleLayers, setVisibleLayers] = useState<Set<string>>(() => new Set(layers.map((layer) => layer.layerId)));
+
+  useEffect(() => {
+    setVisibleLayers(new Set(layers.map((layer) => layer.layerId)));
+  }, [layers]);
+
+  function toggleLayer(layerId: string) {
+    setVisibleLayers((previous) => {
+      const next = new Set(previous);
+      if (next.has(layerId)) next.delete(layerId);
+      else next.add(layerId);
+      return next;
+    });
+  }
+
   return (
     <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
       <h2 className="text-xl font-semibold text-white">Smart Mobility Map</h2>
-      <p className="mt-2 text-sm text-slate-400">Phase 2 decision-support overlays retained as the next-layer integration boundary.</p>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {overlays.map((overlay) => (
-          <div key={overlay} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-            {overlay}
-          </div>
+      <p className="mt-2 text-sm leading-6 text-slate-400">Case-history and reference overlays are independently toggleable. This is decision support, not a live traffic or sensor feed.</p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {layers.map((layer) => (
+          <motion.button {...scaleTap} key={layer.layerId} type="button" onClick={() => toggleLayer(layer.layerId)} className={`rounded-full border px-3 py-1 text-xs transition-colors duration-200 ${visibleLayers.has(layer.layerId) ? 'border-white/20 bg-white/10 text-white' : 'border-white/10 text-slate-500'}`}>
+            <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: layer.color }} />
+            {layer.label}
+          </motion.button>
         ))}
       </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: DURATION.slow, ease: EASE_OUT }}
+        className="mt-5 h-80 overflow-hidden rounded-2xl border border-white/10 bg-slate-950"
+      >
+        <MapContainer center={[18.5204, 73.8567]} zoom={12} scrollWheelZoom={false} className="h-full w-full">
+          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {layers.filter((layer) => visibleLayers.has(layer.layerId)).flatMap((layer) => layer.features.map((feature) => {
+            if (isPoint(feature)) {
+              const [longitude, latitude] = feature.geometry.coordinates;
+              if (longitude === undefined || latitude === undefined) return null;
+              return (
+                <CircleMarker key={feature.featureId} center={[latitude, longitude]} radius={9} pathOptions={{ color: layer.color, fillColor: layer.color, fillOpacity: 0.6 }}>
+                  <Popup>
+                    <strong>{feature.properties.title}</strong><br />
+                    {feature.properties.detail}<br />
+                    <small>Source: {feature.properties.source.replace('-', ' ')}</small>
+                  </Popup>
+                </CircleMarker>
+              );
+            }
+            if (isLine(feature)) {
+              const positions = feature.geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude] as [number, number]);
+              return <Polyline key={feature.featureId} positions={positions} pathOptions={{ color: layer.color, weight: 5, opacity: 0.8 }}><Popup><strong>{feature.properties.title}</strong><br />{feature.properties.detail}</Popup></Polyline>;
+            }
+            return null;
+          }))}
+        </MapContainer>
+      </motion.div>
     </section>
   );
 }
