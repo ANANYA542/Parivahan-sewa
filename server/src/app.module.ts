@@ -9,6 +9,7 @@ import { MobilityIntelligenceModule } from './modules/mobility-intelligence/mobi
 import { DocumentsModule } from './modules/documents/documents.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { CoreDataModule } from './common/core-data.module.js';
+import { Phase3Module } from './modules/phase3/phase3.module.js';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { CoreDataModule } from './common/core-data.module.js';
     CasesModule,
     NotificationsModule,
     MobilityIntelligenceModule,
-    DocumentsModule
+    DocumentsModule,
+    Phase3Module
   ]
 })
 export class AppModule {}

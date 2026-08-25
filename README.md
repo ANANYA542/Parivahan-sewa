@@ -30,6 +30,10 @@ Project scaffold for the Parivahan Track PRD and system design.
 - `POST /v1/users/:userId/mobility-intelligence/refresh`
 - `GET /v1/users/:userId/mobility-map`
 - `GET /v1/users/:userId/notifications`
+- `POST /v1/users/:userId/standing-agent`
+- `GET /v1/users/:userId/compliance`
+- `GET /v1/cases/:caseId/challan-verification`
+- `POST /v1/voice/transcribe`
 
 The API uses a seeded in-memory repository in development so the core loop is immediately runnable. The Prisma schema and idempotent seed command are included for the PostgreSQL adapter: run `npm run prisma:generate --workspace @parivahan/server`, migrate, then seed before replacing the development repository in deployment configuration.
 
@@ -40,6 +44,12 @@ See `docs/service-catalog.md` for catalog maintenance guidance and official sour
 ## Phase 2 intelligence
 
 The Mobility Intelligence Layer is read-only over the Phase 1 identity bundle. It refreshes a rule-based score, compliance alerts, map layers, and notification nudges on an in-process five-minute interval and recomputes a snapshot when the user requests it. Map reference features are explicitly labelled `reference-dataset`; replace them with verified official black-spot and PUC sources before production use. Case-history features are derived only from the user's own seeded case data and the map is not a live traffic or sensor feed.
+
+## Phase 3 agent, compliance, and voice
+
+Set `GROQ_API_KEY` in the server environment to enable the Standing Agent and multilingual voice transcription. The agent calls Groq's OpenAI-compatible `openai/gpt-oss-120b` model and is constrained to the documented tool surface; it never has direct access to the data store. Voice recordings are sent to Groq's `whisper-large-v3-turbo` transcription endpoint only after the user starts and stops recording in the browser.
+
+The compliance panel, challan verifier, and safety-points ledger are deliberately labelled demo-only. They use the seeded Case data and direct users to the official eChallan portal for verification and payment; no government registry is queried by this prototype.
 
 ## Next steps
 

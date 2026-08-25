@@ -12,6 +12,7 @@ import { SmartMobilityMap } from './components/map/SmartMobilityMap';
 import { MobilityScoreCard } from './components/intelligence/MobilityScoreCard';
 import { MobilityNudges } from './components/intelligence/MobilityNudges';
 import { ServiceCatalog } from './components/services/ServiceCatalog';
+import { StandingAgentPanel } from './components/phase3/StandingAgentPanel';
 import { createCase, getCase, getIdentity, getMobilityIntelligence, getServices, getWorkflow, resolveIntent } from './lib/api';
 
 const DEMO_USER_ID = 'user-001';
@@ -132,6 +133,9 @@ export default function App() {
           </motion.div>
           <motion.div variants={fadeUp}>
             <MobilityNudges nudges={mobilityIntelligence?.nudges ?? []} onAction={(serviceId) => void handleSelectService(serviceId)} />
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <StandingAgentPanel userId={DEMO_USER_ID} onIntentFromVoice={async (text) => { await handleResolveIntent(text); }} />
           </motion.div>
         </motion.div>
       </Shell>

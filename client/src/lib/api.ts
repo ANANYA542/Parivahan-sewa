@@ -5,6 +5,9 @@ import type {
   IdentityBundle,
   IntentResolution,
   MobilityIntelligenceSnapshot,
+  AgentMessage,
+  AgentResponse,
+  ComplianceSnapshot,
   ServiceDefinition
 } from '@parivahan/shared';
 
@@ -74,5 +77,21 @@ export function createCase(input: CaseSubmissionRequest) {
   return request<CaseRecord>('/cases', {
     method: 'POST',
     body: JSON.stringify(input)
+  });
+}
+
+export function askStandingAgent(userId: string, message: string, history: AgentMessage[]) {
+  return request<AgentResponse>(`/users/${encodeURIComponent(userId)}/standing-agent`, {
+    method: 'POST', body: JSON.stringify({ message, history })
+  });
+}
+
+export function getComplianceSnapshot(userId: string) {
+  return request<ComplianceSnapshot>(`/users/${encodeURIComponent(userId)}/compliance`);
+}
+
+export function transcribeVoice(audioBase64: string, mimeType: string, language?: string) {
+  return request<{ text: string; language?: string }>('/voice/transcribe', {
+    method: 'POST', body: JSON.stringify({ audioBase64, mimeType, ...(language ? { language } : {}) })
   });
 }

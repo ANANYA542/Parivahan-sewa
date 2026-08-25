@@ -1,0 +1,82 @@
+import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import type { AgentMessage, AgentResponse } from '@parivahan/shared';
+import { CoreDataService } from '../../common/core-data.service.js';
+import { MobilityIntelligenceService } from '../mobility-intelligence/mobility-intelligence.service.js';
+import { ComplianceService } from './compliance.service.js';
+
+type ToolCall = { id: string; function: { name: string; arguments: string } };
+type ChatMessage = { role: 'system' | 'user' | 'assistant' | 'tool'; content: string | null; tool_call_id?: string; tool_calls?: ToolCall[] };
+
+const MODEL = 'openai/gpt-oss-120b';
+const TOOL_DEFINITIONS = [
+  { type: 'function', function: { name: 'getCase', description: 'Read one of the citizen’s cases.', parameters: { type: 'object', properties: { caseId: { type: 'string' } }, required: ['caseId'] } } },
+  { type: 'function', function: { name: 'getPointsLedger', description: 'Read the illustrative safety-points ledger.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'getDocumentStatus', description: 'Read document statuses for the citizen’s vehicles.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'draftEscalation', description: 'Draft, but do not submit, a case escalation.', parameters: { type: 'object', properties: { caseId: { type: 'string' }, reason: { type: 'string' } }, required: ['caseId', 'reason'] } } },
+  { type: 'function', function: { name: 'checkNOCEligibility', description: 'Check basic NOC readiness from existing vehicle data.', parameters: { type: 'object', properties: { vehicleId: { type: 'string' } }, required: ['vehicleId'] } } },
+  { type: 'function', function: { name: 'generatePdf', description: 'Prepare a document-generation request; never claim an official document is issued.', parameters: { type: 'object', properties: { caseId: { type: 'string' } }, required: ['caseId'] } } },
+  { type: 'function', function: { name: 'translate', description: 'Return a safe request to translate an answer for the citizen.', parameters: { type: 'object', properties: { text: { type: 'string' }, language: { type: 'string' } }, required: ['text', 'language'] } } },
+  { type: 'function', function: { name: 'checkMobilityTriggers', description: 'Read rule-based mobility nudges for the citizen.', parameters: { type: 'object', properties: {} } } }
+];
+
+@Injectable()
+export class AgentService {
+  constructor(
+    @Inject(CoreDataService) private readonly coreData: CoreDataService,
+    @Inject(ComplianceService) private readonly compliance: ComplianceService,
+    @Inject(MobilityIntelligenceService) private readonly mobility: MobilityIntelligenceService
+  ) {}
+
+  async respond(userId: string, message: string, history: AgentMessage[]): Promise<AgentResponse> {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) throw new ServiceUnavailableException('Standing Agent is not configured. Add GROQ_API_KEY to the server environment.');
+    this.coreData.getIdentityBundle(userId);
+    const messages: ChatMessage[] = [
+      { role: 'system', content: 'You are the Parivahan Track Standing Agent. Give concise, practical decision support. Use tools for citizen-specific facts. Never imply an official registry check, payment, submission, or document issuance occurred. Compliance results are demo-only unless stated otherwise. You have no database access beyond the tools.' },
+      ...history.slice(-8).map((item) => ({ role: item.role, content: item.content })),
+      { role: 'user', content: message }
+    ];
+    const toolsUsed: string[] = [];
+
+    for (let round = 0; round < 4; round += 1) {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: MODEL, messages, tools: TOOL_DEFINITIONS, tool_choice: 'auto', temperature: 0.2, max_tokens: 700 })
+      });
+      const payload = await response.json().catch(() => null) as { choices?: Array<{ message?: { content?: string | null; tool_calls?: ToolCall[] } }>; error?: { message?: string } } | null;
+      const choice = payload?.choices?.[0]?.message;
+      if (!response.ok || !choice) throw new ServiceUnavailableException(payload?.error?.message ?? 'Standing Agent could not respond.');
+      if (!choice.tool_calls?.length) return { message: choice.content?.trim() || 'I could not prepare a response.', toolsUsed, model: MODEL };
+
+      messages.push({ role: 'assistant', content: choice.content ?? null, tool_calls: choice.tool_calls });
+      for (const call of choice.tool_calls) {
+        toolsUsed.push(call.function.name);
+        messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(this.executeTool(userId, call.function.name, call.function.arguments)) });
+      }
+    }
+    throw new ServiceUnavailableException('Standing Agent reached its tool-call limit. Please try a more specific request.');
+  }
+
+  private executeTool(userId: string, name: string, rawArguments: string): unknown {
+    const args = this.parseArguments(rawArguments);
+    switch (name) {
+      case 'getCase': return this.coreData.getCase(String(args.caseId));
+      case 'getPointsLedger': return this.compliance.getPointsLedger(userId);
+      case 'getDocumentStatus': return this.coreData.getIdentityBundle(userId).vehicles.map((vehicle) => ({ registrationNumber: vehicle.registrationNumber, documentStatus: vehicle.documentStatus }));
+      case 'draftEscalation': return { status: 'draft_only', caseId: String(args.caseId), draft: `Escalation draft for ${String(args.caseId)}: ${String(args.reason)}. Review and submit through the case workflow.` };
+      case 'checkNOCEligibility': {
+        const vehicle = this.coreData.getIdentityBundle(userId).vehicles.find((item) => item.vehicleId === args.vehicleId);
+        return vehicle ? { vehicleId: vehicle.vehicleId, eligibleToStart: vehicle.documentStatus.rc === 'valid' && vehicle.documentStatus.puc === 'valid', note: 'Basic demo readiness only; RTO rules and pending liabilities must be verified officially.' } : { error: 'Vehicle not found for this citizen.' };
+      }
+      case 'generatePdf': return { status: 'draft_request_only', caseId: String(args.caseId), note: 'A document draft can be generated from collected case data; this is not an issued government document.' };
+      case 'translate': return { text: String(args.text), targetLanguage: String(args.language), note: 'Translate this response clearly and preserve official-service disclaimers.' };
+      case 'checkMobilityTriggers': return this.mobility.getNudges(userId);
+      default: return { error: `Tool ${name} is not available.` };
+    }
+  }
+
+  private parseArguments(value: string): Record<string, unknown> {
+    try { return JSON.parse(value) as Record<string, unknown>; } catch { return {}; }
+  }
+}
