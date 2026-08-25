@@ -158,3 +158,54 @@ export interface SeedData {
   services: ServiceDefinition[];
   cases: CaseRecord[];
 }
+
+export interface AgentMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AgentResponse {
+  message: string;
+  toolsUsed: string[];
+  model: string;
+}
+
+export interface PointsLedgerEntry {
+  caseId: string;
+  points: number;
+  reason: string;
+  status: 'active' | 'cleared';
+}
+
+export interface PointsLedger {
+  userId: string;
+  activePoints: number;
+  entries: PointsLedgerEntry[];
+  disclaimer: string;
+}
+
+export interface ChallanVerification {
+  caseId: string;
+  status: 'unverified' | 'not_a_challan';
+  message: string;
+  officialUrl: string;
+  disclaimer: string;
+}
+
+export interface ScamSignal {
+  signalId: string;
+  title: string;
+  guidance: string;
+  severity: AlertSeverity;
+}
+
+export interface ComplianceSnapshot {
+  pointsLedger: PointsLedger;
+  scamSignals: ScamSignal[];
+  disclaimer: string;
+}
+
+export interface VoiceTranscription {
+  text: string;
+  language?: string;
+}
