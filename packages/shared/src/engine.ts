@@ -1,4 +1,5 @@
 import type {
+  AppNotification,
   CaseRecord,
   CaseType,
   CaseSubmissionRequest,
@@ -14,6 +15,9 @@ import type {
   UserProfile,
   VehicleRecord
 } from './types.js';
+
+const CLOSED_CASE_STATUSES = new Set(['resolved', 'rejected']);
+const SLA_REMINDER_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 const PARIVAHAN_HOME_URL = 'https://parivahan.gov.in/parivahan/en';
 const VAHAN_SERVICE_URL = 'https://vahan.parivahan.gov.in/vahanservice/vahan/';
@@ -680,6 +684,54 @@ export function buildMobilityMapLayers(bundle: IdentityBundle): MobilityMapLayer
       }))
     }
   ];
+}
+
+/**
+ * A second, independent notification source alongside mobility nudges: cases
+ * with an approaching SLA deadline that are not yet closed. This is what
+ * makes the Notification Service a genuine read/react layer over more than
+ * one input, rather than a re-export of the mobility snapshot.
+ */
+export function buildSlaReminders(bundle: IdentityBundle, now: Date = new Date()): AppNotification[] {
+  const reminders: AppNotification[] = [];
+
+  for (const caseRecord of bundle.cases) {
+    if (CLOSED_CASE_STATUSES.has(caseRecord.status)) continue;
+    if (!caseRecord.slaDeadline) continue;
+
+    const deadline = new Date(caseRecord.slaDeadline).getTime();
+    if (Number.isNaN(deadline)) continue;
+
+    const msRemaining = deadline - now.getTime();
+    if (msRemaining > SLA_REMINDER_WINDOW_MS) continue;
+
+    const severity = msRemaining <= 0 ? 'critical' : msRemaining <= SLA_REMINDER_WINDOW_MS / 2 ? 'warning' : 'info';
+    const message =
+      msRemaining <= 0
+        ? `${caseRecord.caseId} passed its SLA deadline. Check the case for what is still needed.`
+        : `${caseRecord.caseId} is due within ${Math.max(1, Math.round(msRemaining / (60 * 60 * 1000)))}h. Review it before the deadline passes.`;
+
+    reminders.push({
+      notificationId: `sla-${caseRecord.caseId}`,
+      severity,
+      title: msRemaining <= 0 ? 'SLA deadline passed' : 'SLA deadline approaching',
+      message,
+      caseId: caseRecord.caseId,
+      actionServiceId: caseRecord.serviceId,
+      createdAt: now.toISOString(),
+      read: false
+    });
+  }
+
+  return reminders;
+}
+
+export function buildEscalationStageHistoryItem(currentStage: string, at: string): StageHistoryItem {
+  return {
+    stage: currentStage,
+    at,
+    note: 'Escalated by citizen — flagged for priority review.'
+  };
 }
 
 export function buildStageHistory(caseRecord: CaseRecord): StageHistoryItem[] {

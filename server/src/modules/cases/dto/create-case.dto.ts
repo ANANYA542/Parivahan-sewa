@@ -5,11 +5,6 @@ export class CreateCaseDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  userId!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
   serviceId!: string;
 
   @IsOptional()

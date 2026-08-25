@@ -63,6 +63,13 @@ export interface CaseSubmissionRequest {
   submissionData: SubmissionData;
 }
 
+/** What a signed-in client actually sends — the server derives `userId` from the session token, never from the request body. */
+export interface CaseSubmissionInput {
+  serviceId: string;
+  vehicleId?: string;
+  submissionData: SubmissionData;
+}
+
 export interface CaseRecord {
   caseId: string;
   type: CaseType;
@@ -208,4 +215,20 @@ export interface ComplianceSnapshot {
 export interface VoiceTranscription {
   text: string;
   language?: string;
+}
+
+export interface AuthSession {
+  token: string;
+  user: UserProfile;
+}
+
+export interface AppNotification {
+  notificationId: string;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  actionServiceId?: string;
+  caseId?: string;
+  createdAt: string;
+  read: boolean;
 }

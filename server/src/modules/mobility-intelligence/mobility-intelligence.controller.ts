@@ -1,7 +1,9 @@
-import { Controller, Get, Inject, Param, Post } from '@nestjs/common';
+import { Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard.js';
 import { MobilityIntelligenceService } from './mobility-intelligence.service.js';
 
 @Controller('users/:userId')
+@UseGuards(AuthGuard)
 export class MobilityIntelligenceController {
   constructor(@Inject(MobilityIntelligenceService) private readonly mobilityIntelligence: MobilityIntelligenceService) {}
 

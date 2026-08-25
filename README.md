@@ -18,24 +18,33 @@ Project scaffold for the Parivahan Track PRD and system design.
 
 ## Phase 1 API
 
+- `POST /v1/auth/login` — sign in by contact number (demo login: contact lookup only, no password, since the seed data has none). Returns a JWT + user profile.
+- `GET /v1/auth/demo-users` — public directory of seeded demo identities, for a "sign in as" picker.
 - `GET /v1/health`
-- `GET /v1/users/:userId/identity`
+- `GET /v1/users/:userId/identity` — bearer token required; the token's user must match `:userId`.
 - `GET /v1/services`
 - `POST /v1/intents/resolve`
 - `GET /v1/workflows/:serviceId`
-- `GET /v1/users/:userId/cases`
-- `GET /v1/cases/:caseId`
-- `POST /v1/cases`
+- `GET /v1/users/:userId/cases` — bearer token required, ownership enforced.
+- `GET /v1/cases/:caseId` — bearer token required; 403 if the case isn't the caller's.
+- `POST /v1/cases` — bearer token required. `userId` is taken from the token, never from the request body; only `guided` services can open a case (an `official_portal` service returns 400).
+- `POST /v1/cases/:caseId/escalate` — bearer token required, ownership enforced; 400 if the case is already `resolved`/`rejected`.
+- `GET /v1/cases/:caseId/document` — bearer token required, ownership enforced; streams a PDF acknowledgement of the submission (not an official government document).
 - `GET /v1/users/:userId/mobility-intelligence`
 - `POST /v1/users/:userId/mobility-intelligence/refresh`
 - `GET /v1/users/:userId/mobility-map`
-- `GET /v1/users/:userId/notifications`
+- `GET /v1/users/:userId/notifications` — bearer token required. Merges mobility nudges with case SLA reminders and tracks read state.
+- `POST /v1/users/:userId/notifications/:notificationId/read`
 - `POST /v1/users/:userId/standing-agent`
 - `GET /v1/users/:userId/compliance`
 - `GET /v1/cases/:caseId/challan-verification`
 - `POST /v1/voice/transcribe`
 
+Every route above other than login/demo-users/health/services/workflows/intents requires `Authorization: Bearer <token>` from `POST /v1/auth/login`. Set `JWT_SECRET` in `server/.env` (see `.env.example`); without it the server falls back to a development-only secret and logs a warning.
+
 The API uses a seeded in-memory repository in development so the core loop is immediately runnable. The Prisma schema and idempotent seed command are included for the PostgreSQL adapter: run `npm run prisma:generate --workspace @parivahan/server`, migrate, then seed before replacing the development repository in deployment configuration.
+
+**Note on request validation:** this project runs its dev server under `tsx`/esbuild, which does not emit TypeScript's `design:paramtypes` metadata. NestJS's built-in `ValidationPipe` relies on that metadata to know which DTO class to validate a `@Body()` payload against — under esbuild it silently no-ops instead of validating. Every `@Body()` handler in this app uses the `validateBody()` pipe factory in `server/src/common/validate-body.pipe.ts` instead, which takes the DTO class explicitly rather than relying on reflection. Apply the same pattern to any new `@Body()` parameter you add.
 
 The seed dataset contains synthetic users, vehicle profiles, document states, and case histories only. The service catalog mirrors Parivahan's official public service groupings. Only entries marked `guided` are completed within this application; `official_portal` entries link users to the relevant Parivahan flow because eligibility, documents, and state/RTO availability vary by service.
 
@@ -54,6 +63,7 @@ The compliance panel, challan verifier, and safety-points ledger are deliberatel
 ## Next steps
 
 1. Run `npm install` at the repository root.
-2. Run `npm run dev:server` and `npm run dev:client` in separate terminals.
-3. The development identity is `user-001`; it is seeded in the in-memory repository for the Phase 1 demo flow.
-4. Run Prisma migrations and replace the repository adapter with Prisma before deploying. The API validates input and ownership, but the current demo data is intentionally process-local.
+2. Add a `JWT_SECRET` line to `server/.env` (any long random string; `.env` is gitignored so this stays local — see `.env.example`).
+3. Run `npm run dev:server` and `npm run dev:client` in separate terminals.
+4. Open the client and sign in — the login screen lists the seeded demo identities (`user-001` "Ananya Sharma" and five others) as one-click "sign in as" options, or sign in manually with a seeded contact number (e.g. `+91-90000-00001`).
+5. Run Prisma migrations and replace the repository adapter with Prisma before deploying. The API validates input, ownership, and request bodies, but the current demo data is intentionally process-local.

@@ -2,18 +2,25 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { CaseDetail, CaseRecord } from '@parivahan/shared';
 import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
 
+const CLOSED_CASE_STATUSES = new Set(['resolved', 'rejected']);
+
 interface CaseTimelineProps {
   cases: CaseRecord[];
   selectedCase: CaseDetail | null;
   isLoadingDetail: boolean;
+  isEscalating: boolean;
+  isDownloading: boolean;
+  actionError: string | null;
   onSelect: (caseId: string) => void;
+  onEscalate: (caseId: string) => void;
+  onDownload: (caseId: string) => void;
 }
 
 function displayDate(value: string) {
   return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-export function CaseTimeline({ cases, selectedCase, isLoadingDetail, onSelect }: CaseTimelineProps) {
+export function CaseTimeline({ cases, selectedCase, isLoadingDetail, isEscalating, isDownloading, actionError, onSelect, onEscalate, onDownload }: CaseTimelineProps) {
   return (
     <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
       <h2 className="text-xl font-semibold text-white">Case Tracking</h2>
@@ -51,6 +58,28 @@ export function CaseTimeline({ cases, selectedCase, isLoadingDetail, onSelect }:
               </div>
               <span className="text-sm capitalize text-amber-200">{selectedCase.stage.replace('_', ' ')}</span>
             </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <motion.button
+                {...scaleTap}
+                type="button"
+                disabled={isEscalating || CLOSED_CASE_STATUSES.has(selectedCase.status)}
+                onClick={() => onEscalate(selectedCase.caseId)}
+                title={CLOSED_CASE_STATUSES.has(selectedCase.status) ? 'This case is already closed and cannot be escalated.' : undefined}
+                className="rounded-xl border border-amber-300/30 bg-amber-400/10 px-3 py-2 text-xs font-medium text-amber-200 transition-opacity duration-200 hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isEscalating ? 'Escalating…' : 'Escalate for priority review'}
+              </motion.button>
+              <motion.button
+                {...scaleTap}
+                type="button"
+                disabled={isDownloading}
+                onClick={() => onDownload(selectedCase.caseId)}
+                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200 transition-colors duration-200 hover:border-white/25 disabled:opacity-40"
+              >
+                {isDownloading ? 'Preparing PDF…' : 'Download acknowledgement'}
+              </motion.button>
+            </div>
+            {actionError ? <p className="mt-2 text-xs text-rose-300">{actionError}</p> : null}
             <div className="mt-4 space-y-3 border-l border-amber-300/30 pl-4">
               {selectedCase.stageHistory.map((entry, index) => (
                 <motion.div
