@@ -18,6 +18,10 @@ function toBase64(file: Blob): Promise<string> {
   });
 }
 
+function sessionStorageKey(userId: string) {
+  return `parivahan-track:agent-session:${userId}`;
+}
+
 export function StandingAgentPanel({ userId, onIntentFromVoice }: StandingAgentPanelProps) {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [query, setQuery] = useState('');
@@ -26,8 +30,16 @@ export function StandingAgentPanel({ userId, onIntentFromVoice }: StandingAgentP
   const [compliance, setCompliance] = useState<ComplianceSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
+  // The agent's own conversational session — the server is the source of truth
+  // for history once this exists; this is only the pointer to it.
+  const sessionId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
+    try {
+      sessionId.current = window.sessionStorage.getItem(sessionStorageKey(userId)) ?? undefined;
+    } catch {
+      sessionId.current = undefined;
+    }
     void getComplianceSnapshot(userId).then(setCompliance).catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to load compliance guidance.'));
     return () => recorder.current?.stop();
   }, [userId]);
@@ -41,7 +53,13 @@ export function StandingAgentPanel({ userId, onIntentFromVoice }: StandingAgentP
     setIsSending(true);
     setError(null);
     try {
-      const reply = await askStandingAgent(userId, text, messages);
+      const reply = await askStandingAgent(userId, text, messages, sessionId.current);
+      sessionId.current = reply.sessionId;
+      try {
+        window.sessionStorage.setItem(sessionStorageKey(userId), reply.sessionId);
+      } catch {
+        // Session continuity is a convenience; a failed write isn't worth surfacing.
+      }
       setMessages([...nextHistory, { role: 'assistant', content: reply.message }]);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'The Standing Agent could not respond.');
@@ -90,7 +108,7 @@ export function StandingAgentPanel({ userId, onIntentFromVoice }: StandingAgentP
           <div className="mt-5 flex gap-2 border-t border-white/10 pt-5">
             <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void send(); }} placeholder="Ask for guidance on your mobility record" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-amber-300" />
             <motion.button {...scaleTap} type="button" onClick={() => void toggleVoice()} aria-pressed={isListening} className="rounded-xl border border-white/10 px-3 py-2 text-sm font-medium text-slate-200 hover:border-amber-300">{isListening ? 'Stop voice' : 'Use voice'}</motion.button>
-            <motion.button {...scaleTap} type="button" disabled={!query.trim() || isSending} onClick={() => void send()} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">Send</motion.button>
+            <motion.button {...scaleTap} type="button" disabled={!query.trim() || isSending} onClick={() => void send()} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:opacity-50">Send</motion.button>
           </div>
         </div>
         <aside className="border-t border-white/10 bg-slate-950/30 p-6 lg:border-l lg:border-t-0">
