@@ -11,7 +11,7 @@ interface MobilityNudgesProps {
 const severityBadge: Record<string, string> = {
   critical: 'bg-rose-400/15 text-rose-200',
   warning: 'bg-amber-400/15 text-amber-200',
-  info: 'bg-sky-400/15 text-sky-200'
+  info: 'bg-white/10 text-slate-200'
 };
 
 /**

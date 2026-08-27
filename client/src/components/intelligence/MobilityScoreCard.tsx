@@ -22,7 +22,7 @@ function ScoreValue({ score }: { score: number }) {
 const severityDot: Record<string, string> = {
   critical: 'bg-rose-400',
   warning: 'bg-amber-300',
-  info: 'bg-sky-300'
+  info: 'bg-slate-400'
 };
 
 export function MobilityScoreCard({ snapshot }: MobilityScoreCardProps) {
@@ -83,7 +83,7 @@ export function MobilityScoreCard({ snapshot }: MobilityScoreCardProps) {
                 <span>{alert.detail}</span>
               </motion.div>
             ))}
-            {!snapshot.complianceAlerts.length ? <p className="text-sm text-emerald-200">No compliance actions are currently due.</p> : null}
+            {!snapshot.complianceAlerts.length ? <p className="text-sm text-green-200">No compliance actions are currently due.</p> : null}
           </motion.div>
         ) : null}
       </AnimatePresence>

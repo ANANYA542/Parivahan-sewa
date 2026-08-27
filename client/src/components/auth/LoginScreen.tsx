@@ -4,6 +4,7 @@ import type { AuthSession, UserProfile } from '@parivahan/shared';
 import { APP_NAME } from '@parivahan/shared';
 import { DURATION, EASE_OUT, fadeUp, scaleTap, staggerContainer } from '../../lib/motion';
 import { getDemoUsers, login, signup } from '../../lib/api';
+import { RoadJourney } from '../hero/RoadJourney';
 
 interface LoginScreenProps {
   onSignedIn: (session: AuthSession) => void;
@@ -106,29 +107,76 @@ export function LoginScreen({ onSignedIn }: LoginScreenProps) {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center px-4 py-10">
+    <div className="min-h-screen w-full px-4 py-5 md:px-8 md:py-7">
       <motion.div
         variants={staggerContainer}
         initial="hidden"
         animate="show"
-        className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl"
+        className="mx-auto w-full max-w-7xl"
       >
-        <motion.div variants={fadeUp} className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-300">
-            Citizen Portal
-          </span>
-          <span className="text-xs text-slate-500 font-mono">Digital India</span>
-        </motion.div>
+        <motion.header variants={fadeUp} className="flex items-center justify-between gap-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-300 text-base font-black text-slate-950">P</span>
+            <span className="font-display text-xl font-semibold tracking-tight text-white">Parivahan Journey</span>
+          </div>
+          <span className="font-mono text-[10px] tracking-[0.14em] text-slate-500">PUBLIC MOBILITY ACCESS</span>
+        </motion.header>
 
-        <motion.h1 variants={fadeUp} className="mt-4 text-3xl font-bold tracking-tight text-white">
-          {APP_NAME}
-        </motion.h1>
-        <motion.p variants={fadeUp} className="mt-2 text-sm leading-6 text-slate-400">
-          Integrated citizen mobility platform for registration, DL, permits, road nudges, and grievance tracking.
-        </motion.p>
+        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.18fr)_minmax(25rem,0.82fr)] lg:items-stretch">
+          <motion.section variants={fadeUp} className="relative overflow-hidden rounded-[2rem] border border-amber-100/10 bg-gradient-to-br from-slate-900/95 via-slate-900/85 to-green-950/40 p-6 shadow-2xl shadow-black/20 md:p-9">
+            <div className="absolute right-[-5rem] top-[-4rem] h-64 w-64 rounded-full bg-amber-400/15 blur-3xl" aria-hidden="true" />
+            <div className="relative">
+              <span className="inline-flex rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-100">A simpler way to move through mobility services</span>
+              <h1 className="font-display mt-6 max-w-2xl text-4xl leading-[1.02] tracking-tight text-white md:text-6xl">Every transport task starts with one clear next turn.</h1>
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">Explore services as a connected journey. Tell the guide what you need, follow the relevant checkpoints, and keep track of what happens next.</p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signup');
+                    setError(null);
+                  }}
+                  className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-300"
+                >
+                  Ask AI for a route
+                </button>
+                <a href="#account-entry" className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/10">Login or sign up</a>
+              </div>
+            </div>
 
-        {/* Tab Switcher: Sign Up First */}
-        <motion.div variants={fadeUp} className="mt-6 flex rounded-2xl bg-white/5 p-1 border border-white/10">
+            <div className="relative mt-8 rounded-3xl border border-white/10 bg-slate-950/30 px-2 pt-3 md:px-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-2">
+                <span className="font-mono text-[10px] tracking-[0.16em] text-slate-500">DISCOVER YOUR ROUTE</span>
+                <span className="text-xs text-slate-400">Licence to permits, one connected path</span>
+              </div>
+              <RoadJourney />
+            </div>
+
+            <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
+              {[
+                ['1', 'Describe your need', 'Use ordinary language, not portal labels.'],
+                ['2', 'Follow clear steps', 'See only what the current checkpoint needs.'],
+                ['3', 'Track the outcome', 'Keep applications and next actions together.']
+              ].map(([number, heading, detail]) => (
+                <div key={number} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                  <span className="font-mono text-xs text-amber-200">0{number}</span>
+                  <p className="mt-3 text-sm font-semibold text-white">{heading}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">{detail}</p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          <motion.section id="account-entry" variants={fadeUp} className="rounded-[2rem] border border-white/10 bg-slate-900/85 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl md:p-8">
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-200">Citizen entry</span>
+          <span className="font-mono text-[10px] text-slate-500">SYNTHETIC DEMO</span>
+        </div>
+
+        <h2 className="font-display mt-5 text-3xl leading-tight text-white">Start your guided journey.</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-400">{APP_NAME} uses mock data for this prototype. No real personal information is required.</p>
+
+        <div className="mt-6 flex rounded-2xl border border-white/10 bg-white/5 p-1">
           <button
             type="button"
             onClick={() => {
@@ -157,7 +205,7 @@ export function LoginScreen({ onSignedIn }: LoginScreenProps) {
           >
             Sign In
           </button>
-        </motion.div>
+        </div>
 
         <AnimatePresence mode="wait">
           {mode === 'signup' ? (
@@ -335,6 +383,10 @@ export function LoginScreen({ onSignedIn }: LoginScreenProps) {
             </div>
           </motion.div>
         ) : null}
+          </motion.section>
+        </div>
+
+        <motion.p variants={fadeUp} className="mt-5 text-center text-xs leading-5 text-slate-500">A public experience for learners, vehicle owners, drivers, and operators. Government services remain external handoffs where required.</motion.p>
       </motion.div>
     </div>
   );

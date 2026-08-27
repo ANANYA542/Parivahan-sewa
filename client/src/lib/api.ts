@@ -1,3 +1,4 @@
+import type {
   AgentMessage,
   AgentResponse,
   AppNotification,
@@ -10,10 +11,13 @@
   IntentResolution,
   MobilityIntelligenceSnapshot,
   ServiceDefinition,
-  UserProfile
+  UserProfile,
+  VehicleRecord
 } from '@parivahan/shared';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:4000/v1').replace(/\/$/, '');
+// In local development Vite proxies this path to Nest. Deployments can set
+// VITE_API_URL to their public API URL without changing client code.
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? '/v1').replace(/\/$/, '');
 
 export class ApiRequestError extends Error {
   constructor(message: string, readonly status?: number) {
@@ -100,8 +104,15 @@ export function getIdentity(userId: string) {
   return request<IdentityBundle>(`/users/${encodeURIComponent(userId)}/identity`);
 }
 
+export function registerVehicle(userId: string, input: { registrationNumber: string; vehicleType: string }) {
+  return request<VehicleRecord>(`/users/${encodeURIComponent(userId)}/vehicles`, {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
 export function resolveIntent(query: string) {
-  return request<{ intent: IntentResolution }>('/intents/resolve', {
+  return request<{ intent: IntentResolution; service: ServiceDefinition | null }>('/intents/resolve', {
     method: 'POST',
     body: JSON.stringify({ query })
   });
@@ -130,10 +141,10 @@ export function createCase(input: CaseSubmissionInput) {
   });
 }
 
-export function askStandingAgent(userId: string, message: string, history: AgentMessage[]) {
+export function askStandingAgent(userId: string, message: string, history: AgentMessage[], sessionId?: string) {
   return request<AgentResponse>(`/users/${encodeURIComponent(userId)}/standing-agent`, {
     method: 'POST',
-    body: JSON.stringify({ message, history })
+    body: JSON.stringify({ message, history, sessionId })
   });
 }
 

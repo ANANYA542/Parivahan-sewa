@@ -17,15 +17,16 @@ export function MyVahanDashboard({ identity }: MyVahanDashboardProps) {
     : [];
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-      <h2 className="text-xl font-semibold text-white">My Vahan</h2>
+    <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 md:p-7">
+      <p className="font-mono text-[10px] tracking-[0.16em] text-slate-400">YOUR VEHICLE</p>
+      <h2 className="font-display mt-2 text-3xl text-white">My Vahan</h2>
       <p className="mt-2 text-sm text-slate-400">
         {vehicle ? `${vehicle.registrationNumber} · ${vehicle.vehicleType.replace('-', ' ')}` : 'Loading your linked vehicle records...'}
       </p>
       <motion.div variants={staggerContainer} initial="hidden" animate="show" className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
-          <motion.div key={card.label} variants={fadeUp} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{card.label}</div>
+          <motion.div key={card.label} variants={fadeUp} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+            <div className="font-mono text-[10px] tracking-[0.13em] text-slate-400">{card.label}</div>
             <div className={`mt-2 text-lg font-medium ${card.value === 'expired' ? 'text-rose-300' : 'text-white'}`}>{card.value}</div>
           </motion.div>
         ))}

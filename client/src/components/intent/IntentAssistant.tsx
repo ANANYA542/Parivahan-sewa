@@ -32,11 +32,12 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
   }
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-      <h2 className="text-xl font-semibold text-white">Intent Assistant</h2>
-      <p className="mt-2 text-sm text-slate-400">Describe the situation and we will select the right service journey.</p>
-      <div className="mt-5 rounded-2xl border border-dashed border-amber-400/30 bg-amber-400/5 p-4">
-        <label className="text-sm text-amber-200" htmlFor="intent-query">What do you need help with?</label>
+    <section id="journey-guide" className="scroll-mt-5 rounded-[2rem] border border-amber-300/15 bg-gradient-to-br from-amber-400/10 via-slate-900/75 to-slate-900/70 p-6 md:p-7">
+      <p className="font-mono text-[10px] tracking-[0.16em] text-amber-200">JOURNEY GUIDE</p>
+      <h2 className="font-display mt-2 text-3xl text-white">Tell us what brought you here.</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-400">Use ordinary language. The guide maps your situation to the right service journey.</p>
+      <div className="mt-5 rounded-2xl border border-dashed border-amber-400/30 bg-slate-950/25 p-4">
+        <label className="text-sm font-medium text-amber-100" htmlFor="intent-query">What do you need help with?</label>
         <div className="mt-3 flex gap-2">
           <input
             id="intent-query"
@@ -46,7 +47,7 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
               if (event.key === 'Enter') void submitIntent();
             }}
             placeholder="For example, my PUC has expired"
-            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none transition-colors duration-200 placeholder:text-slate-500 focus:border-amber-300"
+            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white outline-none transition-colors duration-200 placeholder:text-slate-500 focus:border-amber-300"
           />
           <motion.button
             {...scaleTap}
@@ -84,7 +85,7 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
             animate={{ opacity: 1, y: 0, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: DURATION.base, ease: EASE_OUT }}
-            className="mt-4 overflow-hidden rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-sm text-emerald-100"
+            className="mt-4 overflow-hidden rounded-2xl border border-green-400/20 bg-green-400/5 p-4 text-sm text-green-100"
           >
             {result.clarificationNeeded ? 'I need a little more detail. Try mentioning PUC, challan, or accident.' : `Matched: ${result.serviceName} (${result.confidence} confidence). The journey is ready below.`}
           </motion.div>
