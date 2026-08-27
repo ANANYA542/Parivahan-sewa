@@ -6,17 +6,17 @@ import type { Variants } from 'framer-motion';
  * durations, instead of every component inventing its own timing.
  */
 
-export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+export const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 export const DURATION = {
   fast: 0.16,
-  base: 0.35,
+  base: 0.24,
   slow: 0.6
 } as const;
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: DURATION.base, ease: EASE_OUT } }
+  hidden: { opacity: 0, transform: 'translateY(14px)' },
+  show: { opacity: 1, transform: 'translateY(0)', transition: { duration: DURATION.base, ease: EASE_OUT } }
 };
 
 export const staggerContainer: Variants = {
@@ -27,7 +27,7 @@ export const staggerContainer: Variants = {
 };
 
 export const scaleTap = {
-  whileHover: { scale: 1.015 },
-  whileTap: { scale: 0.985 },
+  whileHover: { transform: 'scale(1.015)' },
+  whileTap: { transform: 'scale(0.985)' },
   transition: { duration: DURATION.fast, ease: EASE_OUT }
 } as const;
