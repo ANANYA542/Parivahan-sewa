@@ -42,6 +42,14 @@ export interface ServiceDefinition {
   officialUrl?: string;
   steps: ServiceStep[];
   requiredDocuments: string[];
+  /**
+   * Tap-to-select choices for specific fields, keyed by field name. When a
+   * field has an entry here, the guided flow renders it as chips instead of
+   * free text — used for structured fields (severity, weather, collision
+   * type, ...) modelled on real-world reporting vocabulary rather than
+   * open-ended prose.
+   */
+  fieldOptions?: Record<string, string[]>;
 }
 
 export interface IntentResolution {
@@ -175,6 +183,7 @@ export interface AgentResponse {
   message: string;
   toolsUsed: string[];
   model: string;
+  sessionId: string;
 }
 
 export interface PointsLedgerEntry {

@@ -70,13 +70,21 @@ export const serviceCatalog: ServiceDefinition[] = [
     officialUrl: ECHALLAN_URL,
     steps: [
       { id: 'preview', title: 'Review dispute summary', fields: [] },
-      { id: 'challan', title: 'Enter challan details', fields: ['challanNumber'] },
+      { id: 'challan', title: 'Enter challan details', fields: ['challanNumber', 'licenceNumber'] },
+      { id: 'reason', title: 'Explain the dispute', fields: ['reason'] },
       { id: 'evidence', title: 'Attach evidence', fields: ['attachments'] },
       { id: 'confirm', title: 'Submit dispute', fields: ['declaration'] }
     ],
     requiredDocuments: ['Challan Notice', 'Evidence Files']
   },
   {
+    // Field vocabulary (area type, weather, collision type, hit & run,
+    // injury severity) follows MoRTH's Road Accident Recording Form —
+    // the format India's police actually use at the scene — curated down
+    // from its ~30 fields to what a citizen can complete in under a
+    // minute. There is no citizen-facing official equivalent of this
+    // service anywhere in Parivahan/Vahan/Sarathi today; accident
+    // reporting is otherwise a police-station, paper-only process.
     serviceId: 'svc-accident-report',
     name: 'Accident Report',
     category: 'case-management',
@@ -85,10 +93,18 @@ export const serviceCatalog: ServiceDefinition[] = [
     steps: [
       { id: 'preview', title: 'Review incident intake', fields: [] },
       { id: 'incident', title: 'Capture incident details', fields: ['location', 'time'] },
-      { id: 'people', title: 'Record people involved', fields: ['injuries', 'vehicles'] },
+      { id: 'context', title: 'Describe the conditions', fields: ['areaType', 'weather', 'collisionType', 'hitAndRun'] },
+      { id: 'people', title: 'Record people and vehicles involved', fields: ['injurySeverity', 'vehiclesInvolved'] },
       { id: 'confirm', title: 'Submit report', fields: ['declaration'] }
     ],
-    requiredDocuments: ['Incident details']
+    requiredDocuments: ['Incident details'],
+    fieldOptions: {
+      areaType: ['Urban', 'Rural'],
+      weather: ['Sunny / clear', 'Rainy', 'Foggy / misty', 'Other'],
+      collisionType: ['Vehicle to vehicle', 'Vehicle to pedestrian', 'Vehicle to two-wheeler / bicycle', 'Hit parked vehicle or object', 'Vehicle overturned', 'Other'],
+      hitAndRun: ['No', 'Yes'],
+      injurySeverity: ['No injury', 'Minor injury', 'Grievous injury (hospitalised)', 'Fatal']
+    }
   },
   {
     serviceId: 'svc-grievance-report',
@@ -98,11 +114,14 @@ export const serviceCatalog: ServiceDefinition[] = [
     delivery: 'guided',
     steps: [
       { id: 'preview', title: 'Review grievance intake', fields: [] },
-      { id: 'details', title: 'Describe the issue', fields: ['subject', 'description'] },
+      { id: 'details', title: 'Describe the issue', fields: ['category', 'subject', 'description'] },
       { id: 'evidence', title: 'Attach supporting details', fields: ['attachments'] },
       { id: 'confirm', title: 'Submit grievance', fields: ['declaration'] }
     ],
-    requiredDocuments: ['Supporting evidence, if available']
+    requiredDocuments: ['Supporting evidence, if available'],
+    fieldOptions: {
+      category: ['Service delay', 'Incorrect fee or challan', 'Staff conduct', 'Document or records error', 'Other']
+    }
   },
   officialService('svc-learner-licence', 'Learner Licence', 'driving-licence', 'Apply for a learner licence through Sarathi.', SARATHI_SERVICE_URL),
   officialService('svc-driving-licence', 'Driving Licence', 'driving-licence', 'Apply for a new driving licence through Sarathi.', SARATHI_SERVICE_URL),
