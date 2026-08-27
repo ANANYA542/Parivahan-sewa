@@ -7,6 +7,14 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/v1': {
+        target: process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:4000',
+        changeOrigin: true
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(rootDir, './src'),

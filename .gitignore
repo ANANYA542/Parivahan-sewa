@@ -10,3 +10,10 @@ coverage
 *.tsbuildinfo
 prisma/dev.db
 server/.env
+
+# Workspace tools & agent caches
+.agents
+.codex
+.impeccable
+.claude
+skills-lock.json
