@@ -15,6 +15,11 @@ Project scaffold for the Parivahan Track PRD and system design.
 - Phase 1: identity, intent, guided workflows, submission, case creation, and tracking.
 - Phase 2: compliance alerts, health score, smart map data, and extended mobility intelligence.
 - Phase 3: standing agent, nudging, voice, and regional language support.
+  - **Ideation — Vehicle Breakdown Assistance:** a real-time "Vehicle Breakdown" button connecting stranded motorists to verified local mechanics or towing services.
+    - Model: the platform acts as an aggregator over existing private roadside-assistance (RSA) providers and local garages rather than operating a mechanic fleet directly — similar in shape to how ONDC or IRCTC's food-delivery integration aggregates third-party operators.
+    - Potential value: standardised, capped pricing so drivers aren't overcharged in an emergency; safer response for women and families stranded at night via government-verified responders; reach into remote highway stretches by leveraging NHAI patrol networks; faster, more accurate dispatch using the RC/insurance details already on file in this app.
+    - Open questions before this gets scoped: real-time dispatch logistics (a known weak point for government-run systems, which is why the aggregator model is preferred over direct fleet management); mechanic quality control and a rating/verification system; and clear liability disclaimers for vehicle damage or delay caused by a dispatched third-party mechanic.
+    - Not part of Phase 1/2 — captured here as a future idea, not a committed scope item.
 
 ## Phase 1 API
 
