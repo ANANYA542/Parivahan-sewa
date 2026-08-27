@@ -20,6 +20,26 @@ function displayDate(value: string) {
   return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
+function slaCountdown(deadline: string): { label: string; tone: 'amber' | 'rose' | 'green' } {
+  const remainingMs = new Date(deadline).getTime() - Date.now();
+  const remainingHours = remainingMs / (60 * 60 * 1000);
+  if (remainingMs < 0) {
+    const overdueDays = Math.ceil(Math.abs(remainingHours) / 24);
+    return { label: `Overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}`, tone: 'rose' };
+  }
+  if (remainingHours < 24) {
+    return { label: `${Math.max(1, Math.round(remainingHours))} hour${Math.round(remainingHours) === 1 ? '' : 's'} left`, tone: 'rose' };
+  }
+  const remainingDays = Math.ceil(remainingHours / 24);
+  return { label: `${remainingDays} day${remainingDays === 1 ? '' : 's'} left`, tone: remainingDays <= 1 ? 'amber' : 'green' };
+}
+
+const countdownTone: Record<'amber' | 'rose' | 'green', string> = {
+  amber: 'bg-amber-400/15 text-amber-200',
+  rose: 'bg-rose-400/15 text-rose-200',
+  green: 'bg-green-400/15 text-green-200'
+};
+
 export function CaseTimeline({ cases, selectedCase, isLoadingDetail, isEscalating, isDownloading, actionError, onSelect, onEscalate, onDownload }: CaseTimelineProps) {
   return (
     <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
@@ -55,6 +75,11 @@ export function CaseTimeline({ cases, selectedCase, isLoadingDetail, isEscalatin
               <div>
                 <p className="font-medium text-white">{selectedCase.service.name}</p>
                 <p className="mt-1 text-xs text-slate-400">SLA: {selectedCase.slaDeadline ? displayDate(selectedCase.slaDeadline) : 'Not assigned'}</p>
+                {selectedCase.slaDeadline && !CLOSED_CASE_STATUSES.has(selectedCase.status) ? (
+                  <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${countdownTone[slaCountdown(selectedCase.slaDeadline).tone]}`}>
+                    {slaCountdown(selectedCase.slaDeadline).label}
+                  </span>
+                ) : null}
               </div>
               <span className="text-sm capitalize text-amber-200">{selectedCase.stage.replace('_', ' ')}</span>
             </div>
