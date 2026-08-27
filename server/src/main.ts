@@ -6,8 +6,12 @@ import { AppModule } from './app.module.js';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('v1');
+  const clientOrigins = (process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
+    origin: clientOrigins,
     methods: ['GET', 'POST']
   });
   app.useGlobalPipes(
@@ -17,7 +21,9 @@ async function bootstrap() {
       forbidNonWhitelisted: true
     })
   );
-  const port = Number(process.env.API_PORT ?? 4000);
+  // Most hosting platforms (Render, Railway, etc.) inject PORT and expect the
+  // app to bind to it; API_PORT stays as the local-dev override.
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port);
 }
 
