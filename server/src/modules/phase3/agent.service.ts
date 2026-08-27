@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import type { AgentMessage, AgentResponse } from '@parivahan/shared';
 import { CoreDataService } from '../../common/core-data.service.js';
@@ -19,21 +20,44 @@ const TOOL_DEFINITIONS = [
   { type: 'function', function: { name: 'checkMobilityTriggers', description: 'Read rule-based mobility nudges for the citizen.', parameters: { type: 'object', properties: {} } } }
 ];
 
+interface AgentSession {
+  userId: string;
+  history: AgentMessage[];
+  lastActiveAt: number;
+}
+
+const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
+const SESSION_HISTORY_LIMIT = 16;
+
 @Injectable()
 export class AgentService {
+  /**
+   * In-memory session store: the Standing Agent's own conversational memory,
+   * keyed by a client-held sessionId, separate from — and not duplicating —
+   * any Case data. Intentionally not backed by a database for this build.
+   */
+  private readonly sessions = new Map<string, AgentSession>();
+
   constructor(
     @Inject(CoreDataService) private readonly coreData: CoreDataService,
     @Inject(ComplianceService) private readonly compliance: ComplianceService,
     @Inject(MobilityIntelligenceService) private readonly mobility: MobilityIntelligenceService
   ) {}
 
-  async respond(userId: string, message: string, history: AgentMessage[]): Promise<AgentResponse> {
+  async respond(userId: string, message: string, clientHistory: AgentMessage[], requestedSessionId?: string): Promise<AgentResponse> {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new ServiceUnavailableException('Standing Agent is not configured. Add GROQ_API_KEY to the server environment.');
     this.coreData.getIdentityBundle(userId);
+
+    const sessionId = this.resolveSessionId(userId, requestedSessionId);
+    const session = this.sessions.get(sessionId)!;
+    // Server-held history is authoritative once a session exists; fall back to
+    // whatever the client sent only the first time this session is seen.
+    const priorHistory = session.history.length ? session.history : clientHistory;
+
     const messages: ChatMessage[] = [
       { role: 'system', content: 'You are the Parivahan Track Standing Agent. Give concise, practical decision support. Use tools for citizen-specific facts. Never imply an official registry check, payment, submission, or document issuance occurred. Compliance results are demo-only unless stated otherwise. You have no database access beyond the tools.' },
-      ...history.slice(-8).map((item) => ({ role: item.role, content: item.content })),
+      ...priorHistory.slice(-8).map((item) => ({ role: item.role, content: item.content })),
       { role: 'user', content: message }
     ];
     const toolsUsed: string[] = [];
@@ -47,7 +71,11 @@ export class AgentService {
       const payload = await response.json().catch(() => null) as { choices?: Array<{ message?: { content?: string | null; tool_calls?: ToolCall[] } }>; error?: { message?: string } } | null;
       const choice = payload?.choices?.[0]?.message;
       if (!response.ok || !choice) throw new ServiceUnavailableException(payload?.error?.message ?? 'Standing Agent could not respond.');
-      if (!choice.tool_calls?.length) return { message: choice.content?.trim() || 'I could not prepare a response.', toolsUsed, model: MODEL };
+      if (!choice.tool_calls?.length) {
+        const reply = choice.content?.trim() || 'I could not prepare a response.';
+        this.appendToSession(sessionId, [{ role: 'user', content: message }, { role: 'assistant', content: reply }]);
+        return { message: reply, toolsUsed, model: MODEL, sessionId };
+      }
 
       messages.push({ role: 'assistant', content: choice.content ?? null, tool_calls: choice.tool_calls });
       for (const call of choice.tool_calls) {
@@ -56,6 +84,30 @@ export class AgentService {
       }
     }
     throw new ServiceUnavailableException('Standing Agent reached its tool-call limit. Please try a more specific request.');
+  }
+
+  private resolveSessionId(userId: string, requestedSessionId?: string): string {
+    this.evictExpiredSessions();
+    if (requestedSessionId && this.sessions.get(requestedSessionId)?.userId === userId) {
+      return requestedSessionId;
+    }
+    const sessionId = requestedSessionId && requestedSessionId.trim() ? requestedSessionId : randomUUID();
+    this.sessions.set(sessionId, { userId, history: [], lastActiveAt: Date.now() });
+    return sessionId;
+  }
+
+  private appendToSession(sessionId: string, additions: AgentMessage[]): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+    session.history = [...session.history, ...additions].slice(-SESSION_HISTORY_LIMIT);
+    session.lastActiveAt = Date.now();
+  }
+
+  private evictExpiredSessions(): void {
+    const cutoff = Date.now() - SESSION_TTL_MS;
+    for (const [sessionId, session] of this.sessions) {
+      if (session.lastActiveAt < cutoff) this.sessions.delete(sessionId);
+    }
   }
 
   private executeTool(userId: string, name: string, rawArguments: string): unknown {
@@ -67,7 +119,7 @@ export class AgentService {
       case 'draftEscalation': return { status: 'draft_only', caseId: String(args.caseId), draft: `Escalation draft for ${String(args.caseId)}: ${String(args.reason)}. Review and submit through the case workflow.` };
       case 'checkNOCEligibility': {
         const vehicle = this.coreData.getIdentityBundle(userId).vehicles.find((item) => item.vehicleId === args.vehicleId);
-        return vehicle ? { vehicleId: vehicle.vehicleId, eligibleToStart: vehicle.documentStatus.rc === 'valid' && vehicle.documentStatus.puc === 'valid', note: 'Basic demo readiness only; RTO rules and pending liabilities must be verified officially.' } : { error: 'Vehicle not found for this citizen.' };
+        return vehicle ? { vehicleId: vehicle.vehicleId, eligibleToStart: vehicle.documentStatus.rc === 'active' && vehicle.documentStatus.puc === 'active', note: 'Basic demo readiness only; RTO rules and pending liabilities must be verified officially.' } : { error: 'Vehicle not found for this citizen.' };
       }
       case 'generatePdf': return { status: 'draft_request_only', caseId: String(args.caseId), note: 'A document draft can be generated from collected case data; this is not an issued government document.' };
       case 'translate': return { text: String(args.text), targetLanguage: String(args.language), note: 'Translate this response clearly and preserve official-service disclaimers.' };

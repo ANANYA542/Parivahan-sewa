@@ -8,4 +8,8 @@ export class AgentQueryDto {
   @IsOptional()
   @IsArray()
   history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
 }
