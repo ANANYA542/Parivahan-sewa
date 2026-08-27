@@ -162,6 +162,28 @@ export class CoreDataService {
     return copy(caseRecord);
   }
 
+  /** Minimal onboarding capability: lets a citizen add a vehicle to their own account. */
+  registerVehicle(input: { ownerId: string; registrationNumber: string; vehicleType: string }): VehicleRecord {
+    this.findUser(input.ownerId);
+
+    const registrationNumber = input.registrationNumber.trim().toUpperCase();
+    const existing = this.vehicles.find((item) => item.registrationNumber.trim().toUpperCase() === registrationNumber);
+    if (existing) {
+      throw new BadRequestException('A vehicle with this registration number is already on file.');
+    }
+
+    const vehicle: VehicleRecord = {
+      vehicleId: `veh-${String(this.vehicles.length + 1).padStart(3, '0')}`,
+      ownerId: input.ownerId,
+      registrationNumber,
+      vehicleType: input.vehicleType.trim(),
+      documentStatus: {}
+    };
+
+    this.vehicles.push(vehicle);
+    return copy(vehicle);
+  }
+
   escalateCase(caseId: string, requestingUserId: string): CaseRecord {
     const caseRecord = this.cases.find((item) => item.caseId === caseId);
     if (!caseRecord) {
