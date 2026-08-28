@@ -52,6 +52,20 @@ export interface ServiceDefinition {
    * open-ended prose.
    */
   fieldOptions?: Record<string, string[]>;
+  /**
+   * A real, manually-added official government form (see
+   * packages/shared/src/forms-metadata.ts) that applies directly to this
+   * service — a genuine CMVR form, not a placeholder. Only set where the
+   * match was confidently confirmed by reading the form's own content, not
+   * guessed from the service name. Services without a confirmed match keep
+   * relying on `officialUrl` alone.
+   */
+  officialForm?: {
+    formNumber: string;
+    title: string;
+    /** Path served by the client app, e.g. "/forms/FORM-2.pdf". */
+    path: string;
+  };
 }
 
 export interface IntentResolution {

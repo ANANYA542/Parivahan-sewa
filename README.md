@@ -38,8 +38,9 @@ This is the actual path exercised with a real browser (Playwright + Chromium) ag
    - *Record people and vehicles involved* — injury severity as chips, a free-text field for vehicles involved.
    - *Submit report* — a required "I confirm this information is accurate" checkbox, then Submit.
 7. **Confirmation** — an inline message ("Submitted successfully. Case case-NNN is now being tracked.") appears immediately; no page reload, no dead end.
-8. **Case Tracking** — the new case appears with its status ("Submitted"), a due-by date and a live "N days left" countdown, a "Mark as urgent" escalation action, and "Download my copy".
+8. **Case Tracking** — the new case appears with a colored status badge (Submitted/Pending/Action needed/Approved/Rejected), a due-by date and a live "N days left" countdown, a "Mark as urgent" escalation action, and "Download my copy".
 9. **Download** — clicking through produces a real, generated PDF: a sectioned "Road Incident Intimation Record" a citizen could hand to a police station or insurer.
+10. **My Documents (dashboard)** — every completed service reappears here automatically: service name, completion date, a real first-page thumbnail rendered from the actual generated PDF, and a "Download again" button. Verified scoped strictly to the signed-in citizen — a second demo account sees only its own documents, never another citizen's.
 
 Two other surfaces were walked the same way: the **Services** catalog (browse by category, e.g. Case Management, Driving Licence, PUC & Pollution) and the **Smart Mobility Map** (toggle accident/high-risk/safe-route/pollution/challan overlays, auto-detect location, jump straight into the guided accident report from the map).
 
@@ -50,9 +51,10 @@ Two other surfaces were walked the same way: the **Services** catalog (browse by
 - **Client**: React 18 + TypeScript + Vite, Tailwind CSS, Framer Motion for micro-interactions.
 - **Server**: NestJS (TypeScript), modular by domain — `auth`, `identity`, `intent`, `workflow`, `cases`, `documents`, `mobility-intelligence`, `notifications`, `phase3` (the AI assistant) — JWT bearer auth, per-route ownership checks, request-body validation.
 - **Data**: a seeded, in-memory repository shared across modules (see "What's mocked" — this is a deliberate choice, not an oversight). A `packages/shared` workspace holds the domain types and the rules engine (SLA/case logic, mobility nudges) used by both client and server.
-- **AI reasoning**: Groq-hosted `openai/gpt-oss-120b` (an OpenAI open-weight model, served via Groq's API — not OpenAI's own API; see disclosure below), with a lightweight in-memory conversational session (keyed per browser session, not a database table) and a curated RTO/Parivahan knowledge base concatenated directly into the system prompt — static context injection, not a RAG/embeddings pipeline (see disclosure below).
+- **AI reasoning**: `openai/gpt-oss-120b` — an OpenAI open-weight model, served via Groq's API for speed/stability rather than OpenAI's own endpoint (see disclosure below for why this counts as "powered by an OpenAI model"), with a lightweight in-memory conversational session (keyed per browser session, not a database table) and a curated RTO/Parivahan knowledge base concatenated directly into the system prompt — static context injection, not a RAG/embeddings pipeline (see disclosure below).
 - **Voice**: the browser's native Web Speech API for both directions — `SpeechRecognition` for speech-to-text on every guided-flow field and the Ask AI assistant, `window.speechSynthesis` for read-aloud replies. No external voice API, no key, no per-call cost.
-- **PDF generation**: server-side, sectioned and case-type-aware (a different layout for an accident report vs. a grievance), built from scratch rather than overlaying a real government form template (see disclosure below).
+- **PDF generation**: server-side, sectioned and case-type-aware (a different layout for an accident report vs. a grievance), built from scratch rather than overlaying a real government form template (see disclosure below). Every completed guided service reappears in the citizen's **My Documents** dashboard section with a real first-page preview (rendered client-side with `pdf.js`, since no browser can be relied on to render a PDF natively — see disclosure below) and a "download again" action that re-fetches the same generated copy.
+- **Official government forms**: 25 real CMVR forms (Form 1A, 2, 3, 4A, 5, 5A, 5B, 6A, 7, 8, 10, 10A, 11, 11A, 12, 12A, 13, 13A, 14, 15, 17, 18, 27, 59, 59A), added directly by the applicant rather than scraped, are read, catalogued, and — where a clean, confident match exists — wired directly onto the matching guided service (e.g. every licence service links the real Form 2). Where no confident match exists, the service keeps its existing official-portal link and the journey preview says so explicitly rather than guessing.
 
 ## What's real vs. mocked — stated plainly
 
@@ -63,7 +65,10 @@ Two other surfaces were walked the same way: the **Services** catalog (browse by
 | Database | **In-memory, not Postgres** | A Prisma schema exists and matches the data model, but wiring it in was deliberately deprioritized under deadline pressure in favor of a fully working citizen journey |
 | Generated case PDFs | **Real PDFs, honestly labelled** | Framed explicitly as a citizen's own structured copy — useful for filing a police FIR or an insurance claim — never presented as an official government document, because no such official digital form exists for this service today |
 | Official Vahan/Sarathi/eChallan/PUCC links | **Real URLs, untouched** | Services that need them hand off to the real portal rather than simulating or scraping it |
-| AI reasoning model | **Groq-hosted `openai/gpt-oss-120b`, not OpenAI's own API** | A stability decision made under deadline pressure: Groq was tested and working; the client is already OpenAI-API-compatible, so swapping in a real OpenAI key is a same-day follow-up, not a rebuild |
+| Official government forms (25 real CMVR forms) | **Real PDFs, individually read and catalogued, wired to services only on a confident match** | Every form was opened and read (not guessed from filename) before being catalogued by form number, title, and purpose. 9 licence/trade/school services now link a real matching form; the rest keep their official-portal link with an explicit "no local form on file" note rather than a forced guess |
+| My Documents (dashboard) | **Real, scoped to the signed-in citizen** | Pulled from the citizen's own case list (never a global query), with a real first-page thumbnail of their actual generated PDF and a working re-download — verified with two separate demo accounts to confirm no cross-user leakage |
+| PDF thumbnail preview | **Rendered client-side with `pdf.js`, not a native browser PDF viewer** | A native `<embed>`/blob-URL preview was tried first and failed outright in testing (no PDF plugin available, and a real citizen with "download PDFs" enabled in their browser would hit the same wall) — `pdf.js` rasterizes the real first page to a canvas instead, so it works identically everywhere |
+| AI reasoning model | **`openai/gpt-oss-120b` — OpenAI's own open-weight model, served via Groq's inference API rather than OpenAI's own endpoint** | `gpt-oss-120b` is a model OpenAI itself trained and released (open-weight, Apache 2.0), so this genuinely is "powered by an OpenAI model." Groq hosts it for speed/stability under demo conditions; the request/response shape is OpenAI-compatible, so pointing the same client at `api.openai.com` with a real `OPENAI_API_KEY` instead is a same-day, low-risk swap — deliberately not made this close to submission without a real key in hand to test against, to avoid trading a verified-working integration for an untested one |
 | AI knowledge base | **A curated, hand-written fact sheet, not real RAG** | DL/LL/RC/PUC/fitness validity periods, renewal windows, form numbers, and the real 8-step eChallan grievance process, cross-checked against `parivahan.gov.in`'s own FAQ content — injected into the system prompt on every call with no retrieval step at all. A real embeddings-based RAG layer over a larger, refreshed corpus is the natural next step, not something faked here |
 | Voice input/output | **Real, browser-native Web Speech API** — mechanically verified, acoustic transcription not yet verified with a live mic | Chosen over ElevenLabs/OpenAI Whisper/Sarvam/Bhashini specifically to avoid a second untested external dependency on demo day; see the flow section above for exactly what was and wasn't confirmed |
 | Compliance panel (points ledger, scam signals), Smart Map overlay layers | **Rule-based, explicitly labelled demo-only** | Derived only from the citizen's own seeded case data; map layers are labelled as a reference dataset, never presented as a live feed |
@@ -90,6 +95,15 @@ npm run dev:client   # terminal 2
 ```
 
 Open the client and either sign in via the demo-user picker or sign up fresh (no password required, by design, for this prototype).
+
+## Deployment
+
+Both `client/` and `server/` are already configured for Vercel (`client/vercel.json`, `server/vercel.json`, `server/api/index.ts` as the serverless entry point) and were smoke-tested locally as serverless handlers before this note was written. To go live (a few minutes, from the Vercel dashboard — no CLI login needed):
+
+1. Import the GitHub repo into Vercel twice, as two separate projects: one rooted at `server/` (framework preset: Other), one rooted at `client/` (framework preset: Vite).
+2. On the **server** project, set environment variables `JWT_SECRET` and `GROQ_API_KEY` (see `server/.env.example`), and set `CLIENT_ORIGIN` to the client project's eventual URL once known.
+3. On the **client** project, set `VITE_API_URL` to the server project's URL with `/v1` appended (e.g. `https://parivahan-server.vercel.app/v1`).
+4. Redeploy the server once the client's URL is known, so `CLIENT_ORIGIN` is accurate (CORS otherwise defaults to allow-all, which is safe but looser than necessary).
 
 ## UX audit — what was tested, what was found, what was fixed
 

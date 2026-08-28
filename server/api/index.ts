@@ -1,27 +1,28 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module.js';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express, { Express, Request, Response } from 'express';
+import { AppModule } from '../src/app.module.js';
+
+const server: Express = express();
+let isReady = false;
 
 function getAllowedOrigins(): (string | RegExp)[] | boolean {
   const clientOriginEnv = process.env.CLIENT_ORIGIN;
   if (!clientOriginEnv || clientOriginEnv.trim() === '*' || clientOriginEnv.trim() === '') {
-    // If not specified or set to '*', allow all origins in development/staging
     return true;
   }
-  
   const origins = clientOriginEnv
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
-
   return origins.length > 0 ? origins : true;
 }
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+async function bootstrapServerless() {
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   app.setGlobalPrefix('v1');
-  
   app.enableCors({
     origin: getAllowedOrigins(),
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
@@ -29,7 +30,6 @@ async function bootstrap() {
     credentials: true,
     exposedHeaders: ['Content-Disposition']
   });
-
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -37,11 +37,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true
     })
   );
-
-  // Most hosting platforms (Render, Railway, Fly.io, etc.) inject PORT
-  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
-  await app.listen(port);
-  console.log(`🚀 Server listening on port ${port}`);
+  await app.init();
+  isReady = true;
 }
 
-void bootstrap();
+export default async function handler(req: Request, res: Response) {
+  if (!isReady) {
+    await bootstrapServerless();
+  }
+  server(req, res);
+}
