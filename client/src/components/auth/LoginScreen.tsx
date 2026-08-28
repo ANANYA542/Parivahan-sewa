@@ -115,36 +115,33 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
         animate="show"
         className="mx-auto w-full max-w-7xl"
       >
-        <motion.header variants={fadeUp} className="flex items-center justify-between gap-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-base font-black text-white">P</span>
-            <span className="font-display text-xl font-semibold tracking-tight text-slate-900">Parivahan Journey</span>
-          </div>
-          <span className="font-mono text-[10px] tracking-[0.14em] text-slate-500">PUBLIC MOBILITY ACCESS</span>
-        </motion.header>
-
-        <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.18fr)_minmax(25rem,0.82fr)] lg:items-stretch">
-          <motion.section variants={fadeUp} className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-9">
+        {/* No internal header here — AppNavigation is the single header/logo
+            lockup for both signed-out and signed-in states now; this screen
+            used to render its own separate "P / Parivahan Journey" lockup
+            directly beneath it, which read as a duplicated, redundant header
+            on the very first screen a visitor sees. */}
+        <div className="mt-2 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.18fr)_minmax(25rem,0.82fr)] lg:items-stretch">
+          <motion.section variants={fadeUp} className="relative overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-9">
             <div className="relative">
-              <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-semibold tracking-wide text-orange-700">A simpler way to move through mobility services</span>
-              <h1 className="font-display mt-6 max-w-2xl text-4xl leading-[1.02] tracking-tight text-slate-900 md:text-6xl">Every transport task starts with one clear next turn.</h1>
-              <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">Explore services as a connected journey. Tell the guide what you need, follow the relevant checkpoints, and keep track of what happens next.</p>
+              <span className="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-300">A simpler way to move through mobility services</span>
+              <h1 className="font-display mt-6 max-w-2xl text-4xl leading-[1.02] tracking-tight text-slate-50 md:text-6xl">Every transport task starts with one clear next turn.</h1>
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">Explore services as a connected journey. Tell the guide what you need, follow the relevant checkpoints, and keep track of what happens next.</p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={onOpenAssistant}
-                  className="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-orange-600"
+                  className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-300"
                 >
                   Ask AI for a route
                 </button>
-                <a href="#account-entry" className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">Login or sign up</a>
+                <a href="#account-entry" className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-800">Login or sign up</a>
               </div>
             </div>
 
-            <div className="relative mt-8 rounded-3xl border border-slate-200 bg-slate-50 px-2 pb-8 pt-3 md:px-5">
+            <div className="relative mt-8 rounded-3xl border border-slate-800 bg-slate-800 px-2 pb-8 pt-3 md:px-5">
               <div className="flex flex-wrap items-center justify-between gap-2 px-2">
-                <span className="font-mono text-[10px] tracking-[0.16em] text-slate-500">DISCOVER YOUR ROUTE</span>
-                <span className="text-xs text-slate-500">Licence to permits, one connected path</span>
+                <span className="font-mono text-[10px] tracking-[0.16em] text-slate-400">DISCOVER YOUR ROUTE</span>
+                <span className="text-xs text-slate-400">Licence to permits, one connected path</span>
               </div>
               <RoadJourney />
             </div>
@@ -155,25 +152,25 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                 ['2', 'Follow clear steps', 'See only what the current checkpoint needs.'],
                 ['3', 'Track the outcome', 'Keep applications and next actions together.']
               ].map(([number, heading, detail]) => (
-                <div key={number} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <span className="font-mono text-xs text-orange-600">0{number}</span>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">{heading}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p>
+                <div key={number} className="rounded-2xl border border-slate-800 bg-slate-800 p-4">
+                  <span className="font-mono text-xs text-amber-400">0{number}</span>
+                  <p className="mt-3 text-sm font-semibold text-slate-50">{heading}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">{detail}</p>
                 </div>
               ))}
             </div>
           </motion.section>
 
-          <motion.section id="account-entry" variants={fadeUp} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+          <motion.section id="account-entry" variants={fadeUp} className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-8">
         <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-semibold tracking-wide text-orange-700">Citizen entry</span>
-          <span className="font-mono text-[10px] text-slate-500">SYNTHETIC DEMO</span>
+          <span className="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-300">Citizen entry</span>
+          <span className="font-mono text-[10px] text-slate-400">SYNTHETIC DEMO</span>
         </div>
 
-        <h2 className="font-display mt-5 text-3xl leading-tight text-slate-900">Start your guided journey.</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-500">{APP_NAME} uses mock data for this prototype. No real personal information is required.</p>
+        <h2 className="font-display mt-5 text-3xl leading-tight text-slate-50">Start your guided journey.</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-400">{APP_NAME} uses mock data for this prototype. No real personal information is required.</p>
 
-        <div className="mt-6 flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
+        <div className="mt-6 flex rounded-2xl border border-slate-800 bg-slate-800 p-1">
           <button
             type="button"
             onClick={() => {
@@ -182,8 +179,8 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             }}
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
               mode === 'signup'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-amber-400 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-slate-100'
             }`}
           >
             Create Account (Sign Up)
@@ -196,8 +193,8 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             }}
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
               mode === 'signin'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-amber-400 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-slate-100'
             }`}
           >
             Sign In
@@ -220,42 +217,42 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
               className="mt-6 space-y-4"
             >
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                  Full Name <span className="text-orange-500">*</span>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Full Name <span className="text-amber-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={signUpName}
                   onChange={(e) => setSignUpName(e.target.value)}
                   placeholder="e.g. Ananya Sharma"
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:outline-none"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
                   disabled={isSubmitting}
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                  Mobile / Contact Number <span className="text-orange-500">*</span>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Mobile / Contact Number <span className="text-amber-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={signUpContact}
                   onChange={(e) => setSignUpContact(e.target.value)}
                   placeholder="e.g. +91 8091448752 or 8091448752"
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:outline-none"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
                   disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
                   Preferred Language
                 </label>
                 <select
                   value={signUpLanguage}
                   onChange={(e) => setSignUpLanguage(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-orange-400 focus:outline-none"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 focus:border-amber-400 focus:outline-none"
                   disabled={isSubmitting}
                 >
                   <option value="en">English</option>
@@ -269,7 +266,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                 {...scaleTap}
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-2xl bg-orange-500 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-600 disabled:opacity-60"
+                className="w-full rounded-2xl bg-amber-400 py-3.5 text-sm font-bold text-slate-950 transition-all duration-200 hover:bg-amber-300 disabled:opacity-60"
               >
                 {isSubmitting ? 'Creating your account…' : 'Sign Up & Continue'}
               </motion.button>
@@ -281,9 +278,9 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     setMode('signin');
                     setError(null);
                   }}
-                  className="text-xs text-slate-500 hover:text-orange-600 transition-colors"
+                  className="text-xs text-slate-400 hover:text-amber-300 transition-colors"
                 >
-                  Already have an account? <span className="font-semibold text-orange-600 underline underline-offset-2">Sign in here</span>
+                  Already have an account? <span className="font-semibold text-amber-300 underline underline-offset-2">Sign in here</span>
                 </button>
               </div>
             </motion.form>
@@ -297,8 +294,8 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
               className="mt-6 space-y-4"
             >
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                  Registered Contact Number <span className="text-orange-500">*</span>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Registered Contact Number <span className="text-amber-400">*</span>
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -306,7 +303,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     value={signInContact}
                     onChange={(e) => setSignInContact(e.target.value)}
                     placeholder="+91-90000-00001 or +91 8091448752"
-                    className="flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-400 focus:outline-none"
+                    className="flex-1 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
                     disabled={isSubmitting}
                     autoFocus
                   />
@@ -314,7 +311,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     {...scaleTap}
                     type="submit"
                     disabled={isSubmitting}
-                    className="rounded-2xl bg-orange-500 px-6 py-3 text-sm font-bold text-white transition-all duration-200 hover:bg-orange-600 disabled:opacity-60"
+                    className="rounded-2xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950 transition-all duration-200 hover:bg-amber-300 disabled:opacity-60"
                   >
                     {isSubmitting ? 'Signing in…' : 'Sign In'}
                   </motion.button>
@@ -328,9 +325,9 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     setMode('signup');
                     setError(null);
                   }}
-                  className="text-xs text-slate-500 hover:text-orange-600 transition-colors"
+                  className="text-xs text-slate-400 hover:text-amber-300 transition-colors"
                 >
-                  First time here? <span className="font-semibold text-orange-600 underline underline-offset-2">Sign up for an account</span>
+                  First time here? <span className="font-semibold text-amber-300 underline underline-offset-2">Sign up for an account</span>
                 </button>
               </div>
             </motion.form>
@@ -342,14 +339,14 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: DURATION.base, ease: EASE_OUT }}
             role="alert"
-            className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-sm text-rose-600"
+            className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300"
           >
             <p>{error}</p>
             {notFoundContact && (
               <button
                 type="button"
                 onClick={() => switchToSignUpWithContact(notFoundContact)}
-                className="mt-2 text-xs font-semibold text-orange-600 hover:underline flex items-center gap-1"
+                className="mt-2 text-xs font-semibold text-amber-300 hover:underline flex items-center gap-1"
               >
                 &rarr; Create new account with &ldquo;{notFoundContact}&rdquo; now
               </button>
@@ -358,9 +355,9 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
         ) : null}
 
         {demoUsers.length ? (
-          <motion.div variants={fadeUp} className="mt-8 border-t border-slate-200 pt-6">
+          <motion.div variants={fadeUp} className="mt-8 border-t border-slate-800 pt-6">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-slate-500">Demo accounts (synthetic seed data)</p>
+              <p className="text-xs uppercase tracking-wider text-slate-400">Demo accounts (synthetic seed data)</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {demoUsers.map((user) => (
@@ -374,7 +371,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     setMode('signin');
                     void handleSignIn(undefined, user.contact);
                   }}
-                  className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:border-orange-300 hover:text-orange-700 disabled:opacity-60"
+                  className="rounded-full border border-slate-700 bg-slate-900 px-4 py-1.5 text-xs font-medium text-slate-300 transition-colors duration-200 hover:border-amber-500/30 hover:text-amber-300 disabled:opacity-60"
                 >
                   Quick Sign in as {user.name}
                 </motion.button>
@@ -385,7 +382,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
           </motion.section>
         </div>
 
-        <motion.p variants={fadeUp} className="mt-5 text-center text-xs leading-5 text-slate-500">A public experience for learners, vehicle owners, drivers, and operators. Government services remain external handoffs where required.</motion.p>
+        <motion.p variants={fadeUp} className="mt-5 text-center text-xs leading-5 text-slate-400">A public experience for learners, vehicle owners, drivers, and operators. Government services remain external handoffs where required.</motion.p>
       </motion.div>
     </div>
   );

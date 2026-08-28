@@ -22,41 +22,41 @@ export function JourneyPreview({ service, onStart, onChooseAnother }: JourneyPre
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: DURATION.base, ease: EASE_OUT }}
-      className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-7"
+      className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-7"
     >
-      <p className="font-mono text-[10px] tracking-[0.16em] text-slate-500">JOURNEY PREVIEW</p>
-      <h2 className="font-display mt-2 text-3xl text-slate-900">{service.name}</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{service.description}</p>
+      <p className="font-mono text-[10px] tracking-[0.16em] text-slate-400">JOURNEY PREVIEW</p>
+      <h2 className="font-display mt-2 text-3xl text-slate-50">{service.name}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-300">{service.description}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="font-mono text-[10px] tracking-[0.16em] text-orange-600">ESTIMATED TIME</p>
-          <p className="mt-2 text-sm text-slate-700">{service.estimatedTime ?? (service.delivery === 'official_portal' ? 'Handled on the official portal' : 'A few minutes')}</p>
+        <div className="rounded-2xl border border-slate-800 bg-slate-800 p-4">
+          <p className="font-mono text-[10px] tracking-[0.16em] text-amber-300">ESTIMATED TIME</p>
+          <p className="mt-2 text-sm text-slate-300">{service.estimatedTime ?? (service.delivery === 'official_portal' ? 'Handled on the official portal' : 'A few minutes')}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="font-mono text-[10px] tracking-[0.16em] text-orange-600">WHAT YOU'LL NEED</p>
+        <div className="rounded-2xl border border-slate-800 bg-slate-800 p-4">
+          <p className="font-mono text-[10px] tracking-[0.16em] text-amber-300">WHAT YOU'LL NEED</p>
           {service.requiredDocuments.length ? (
-            <ul className="mt-2 space-y-1 text-sm text-slate-700">
+            <ul className="mt-2 space-y-1 text-sm text-slate-300">
               {service.requiredDocuments.map((document) => <li key={document}>{document}</li>)}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-slate-500">No documents needed to get started.</p>
+            <p className="mt-2 text-sm text-slate-400">No documents needed to get started.</p>
           )}
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="font-mono text-[10px] tracking-[0.16em] text-orange-600">WHAT TO EXPECT</p>
+        <div className="rounded-2xl border border-slate-800 bg-slate-800 p-4">
+          <p className="font-mono text-[10px] tracking-[0.16em] text-amber-300">WHAT TO EXPECT</p>
           {journeySteps.length ? (
-            <ol className="mt-2 space-y-1 text-sm text-slate-700">
+            <ol className="mt-2 space-y-1 text-sm text-slate-300">
               {journeySteps.map((step, index) => <li key={step.id}>{index + 1}. {step.title}</li>)}
             </ol>
           ) : (
-            <p className="mt-2 text-sm text-slate-500">You'll continue through the official portal from here.</p>
+            <p className="mt-2 text-sm text-slate-400">You'll continue through the official portal from here.</p>
           )}
         </div>
       </div>
 
       {service.delivery === 'official_portal' ? (
-        <p className="mt-5 text-sm leading-6 text-slate-500">This service is delivered through the official Parivahan portal. Availability and document requirements can vary by state and RTO.</p>
+        <p className="mt-5 text-sm leading-6 text-slate-400">This service is delivered through the official Parivahan portal. Availability and document requirements can vary by state and RTO.</p>
       ) : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -64,14 +64,14 @@ export function JourneyPreview({ service, onStart, onChooseAnother }: JourneyPre
           {...scaleTap}
           type="button"
           onClick={onStart}
-          className="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-orange-600"
+          className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300"
         >
           Start this journey
         </motion.button>
         <button
           type="button"
           onClick={onChooseAnother}
-          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-700 transition-colors duration-150 hover:border-slate-400"
+          className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-300 transition-colors duration-150 hover:border-slate-600"
         >
           Choose a different service
         </button>

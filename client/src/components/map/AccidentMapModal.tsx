@@ -41,19 +41,23 @@ export function AccidentMapModal({ layers, onStartGuidedReport }: AccidentReport
 
   return (
     <div className="grid min-h-0 grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <div className="min-h-[22rem] rounded-[1.8rem] border border-slate-200 bg-white p-3 shadow-sm">
+      {/* mr-16 below lg reserves clearance from the fixed floating voice-assistant
+          button (bottom-right of viewport) — below lg this card is full-width and
+          would otherwise sit directly under it; the 2-column layout at lg+ already
+          keeps this card clear of that corner. */}
+      <div className="mr-16 min-h-[22rem] rounded-[1.8rem] border border-slate-800 bg-slate-900 p-3 shadow-sm lg:mr-0">
         <SmartMobilityMap layers={layers} />
       </div>
-      <div className="space-y-4 rounded-[1.8rem] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm">
+      <div className="space-y-4 rounded-[1.8rem] border border-slate-800 bg-slate-900 p-5 text-slate-50 shadow-sm">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Report from here</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Report from here</p>
           <h3 className="mt-2 text-2xl font-semibold tracking-tight">Was there an accident nearby?</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Lock your location here, then the guided report walks you through the rest — by voice or by tap, one question at a time.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">Lock your location here, then the guided report walks you through the rest — by voice or by tap, one question at a time.</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-medium text-slate-900">Location</p>
-          <p className="mt-2 text-sm text-slate-600">{locatedAt ?? 'Not detected yet.'}</p>
-          {locationError ? <p className="mt-2 text-xs text-rose-600">{locationError}</p> : null}
+        <div className="rounded-2xl border border-slate-800 bg-slate-800 p-4">
+          <p className="text-sm font-medium text-slate-50">Location</p>
+          <p className="mt-2 text-sm text-slate-300">{locatedAt ?? 'Not detected yet.'}</p>
+          {locationError ? <p className="mt-2 text-xs text-rose-400">{locationError}</p> : null}
         </div>
         {/* min-h on the row and each button is a deliberate floor, not decoration —
             a rare (~1-in-25 in testing), sub-frame CSS Grid auto-sizing race was
@@ -62,14 +66,14 @@ export function AccidentMapModal({ layers, onStartGuidedReport }: AccidentReport
             unclickable. Grid tracks can't collapse below an explicit min-height,
             which removes the possibility regardless of render timing. */}
         <div className="grid min-h-[2.75rem] grid-cols-1 gap-3 sm:grid-cols-2">
-          <motion.button {...scaleTap} type="button" disabled={isLocating} onClick={detectLocation} className="min-h-[2.75rem] rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-orange-600 disabled:opacity-60">
+          <motion.button {...scaleTap} type="button" disabled={isLocating} onClick={detectLocation} className="min-h-[2.75rem] rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:opacity-60">
             {isLocating ? 'Detecting…' : '📍 Auto-detect location'}
           </motion.button>
-          <motion.button {...scaleTap} type="button" onClick={() => onStartGuidedReport(locatedAt)} className="min-h-[2.75rem] rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors duration-150 hover:border-orange-300">
+          <motion.button {...scaleTap} type="button" onClick={() => onStartGuidedReport(locatedAt)} className="min-h-[2.75rem] rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors duration-150 hover:border-amber-500/30">
             Start guided reporting
           </motion.button>
         </div>
-        <div className="rounded-2xl border border-dashed border-green-300 bg-green-50 p-4 text-sm text-green-700">
+        <div className="rounded-2xl border border-dashed border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
           The guided report stays inside the app, start to finish — you'll get a downloadable record shaped for filing an FIR or an insurance claim.
         </div>
       </div>

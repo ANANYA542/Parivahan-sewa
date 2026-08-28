@@ -756,6 +756,12 @@ export function buildComplianceAlerts(bundle: IdentityBundle): ComplianceAlert[]
   return alerts;
 }
 
+const NUDGE_CLOSING_BY_SEVERITY: Record<ComplianceAlert['severity'], string> = {
+  critical: 'This is already affecting your mobility score — act now to start recovering it.',
+  warning: 'Handle this soon to keep your mobility score from slipping further.',
+  info: 'Worth a look next time you have a few minutes.'
+};
+
 export function buildMobilityNudges(
   score: MobilityScoreResult,
   alerts: ComplianceAlert[]
@@ -765,7 +771,7 @@ export function buildMobilityNudges(
       nudgeId: `nudge-${alert.alertId}`,
       severity: alert.severity,
       title: alert.title,
-      message: `${alert.detail}. Take action before this affects your mobility score further.`
+      message: `${alert.detail}. ${NUDGE_CLOSING_BY_SEVERITY[alert.severity]}`
     };
     if (alert.recommendedServiceId) nudge.actionServiceId = alert.recommendedServiceId;
     return nudge;
@@ -870,6 +876,14 @@ export function buildMobilityMapLayers(bundle: IdentityBundle): MobilityMapLayer
  * makes the Notification Service a genuine read/react layer over more than
  * one input, rather than a re-export of the mobility snapshot.
  */
+const CASE_TYPE_LABEL: Record<CaseType, string> = {
+  application: 'application',
+  challan: 'challan dispute',
+  grievance: 'grievance',
+  accident: 'accident report',
+  incident: 'incident report'
+};
+
 export function buildSlaReminders(bundle: IdentityBundle, now: Date = new Date()): AppNotification[] {
   const reminders: AppNotification[] = [];
 
@@ -883,16 +897,17 @@ export function buildSlaReminders(bundle: IdentityBundle, now: Date = new Date()
     const msRemaining = deadline - now.getTime();
     if (msRemaining > SLA_REMINDER_WINDOW_MS) continue;
 
+    const typeLabel = CASE_TYPE_LABEL[caseRecord.type] ?? 'case';
     const severity = msRemaining <= 0 ? 'critical' : msRemaining <= SLA_REMINDER_WINDOW_MS / 2 ? 'warning' : 'info';
     const message =
       msRemaining <= 0
-        ? `${caseRecord.caseId} passed its SLA deadline. Check the case for what is still needed.`
-        : `${caseRecord.caseId} is due within ${Math.max(1, Math.round(msRemaining / (60 * 60 * 1000)))}h. Review it before the deadline passes.`;
+        ? `${caseRecord.caseId} (${typeLabel}) is now overdue. Check the case for what is still needed.`
+        : `${caseRecord.caseId} (${typeLabel}) is due within ${Math.max(1, Math.round(msRemaining / (60 * 60 * 1000)))}h. Review it soon.`;
 
     reminders.push({
       notificationId: `sla-${caseRecord.caseId}`,
       severity,
-      title: msRemaining <= 0 ? 'SLA deadline passed' : 'SLA deadline approaching',
+      title: msRemaining <= 0 ? `Your ${typeLabel} is now overdue` : `Your ${typeLabel} is coming due soon`,
       message,
       caseId: caseRecord.caseId,
       actionServiceId: caseRecord.serviceId,
