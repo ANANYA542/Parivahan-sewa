@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AppController } from './app.controller.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { IdentityModule } from './modules/identity/identity.module.js';
 import { IntentModule } from './modules/intent/intent.module.js';
@@ -24,6 +25,7 @@ import { Phase3Module } from './modules/phase3/phase3.module.js';
     MobilityIntelligenceModule,
     DocumentsModule,
     Phase3Module
-  ]
+  ],
+  controllers: [AppController]
 })
 export class AppModule {}
