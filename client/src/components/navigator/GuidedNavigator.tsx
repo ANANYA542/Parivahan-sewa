@@ -11,6 +11,7 @@ interface GuidedNavigatorProps {
   onSubmit: (input: { serviceId: string; vehicleId?: string; submissionData: SubmissionData }) => Promise<CaseRecord>;
   initialValues?: Record<string, string> | undefined;
   onViewCase?: (caseId: string) => void;
+  onAddVehicle?: () => void;
 }
 
 function formatField(field: string) {
@@ -21,7 +22,7 @@ function fieldIsComplete(field: string, values: Record<string, string>) {
   return field === 'acknowledgement' || field === 'declaration' ? values[field] === 'true' : Boolean(values[field]?.trim());
 }
 
-export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, initialValues, onViewCase }: GuidedNavigatorProps) {
+export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, initialValues, onViewCase, onAddVehicle }: GuidedNavigatorProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [values, setValues] = useState<Record<string, string>>(initialValues ?? {});
   const [message, setMessage] = useState<string | null>(null);
@@ -73,10 +74,10 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
 
   if (!service) {
     return (
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-7">
-        <p className="font-mono text-[10px] tracking-[0.16em] text-slate-500">NEXT CHECKPOINT</p>
-        <h2 className="font-display mt-2 text-3xl text-slate-900">Your guided route will appear here.</h2>
-        <p className="mt-3 text-sm leading-6 text-slate-500">Ask the journey guide above or choose a service below. We only request the details needed for that checkpoint.</p>
+      <section className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-7">
+        <p className="font-mono text-[10px] tracking-[0.16em] text-slate-400">NEXT CHECKPOINT</p>
+        <h2 className="font-display mt-2 text-3xl text-slate-50">Your guided route will appear here.</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-400">Ask the journey guide above or choose a service below. We only request the details needed for that checkpoint.</p>
       </section>
     );
   }
@@ -88,20 +89,20 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: DURATION.base, ease: EASE_OUT }}
-        className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-7"
+        className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-7"
       >
-        <p className="font-mono text-[10px] tracking-[0.16em] text-slate-500">OFFICIAL HANDOFF</p>
-        <h2 className="font-display mt-2 text-3xl text-slate-900">Continue through the official portal.</h2>
-        <p className="mt-2 text-sm text-slate-500">{service.name}</p>
-        <p className="mt-5 text-sm leading-6 text-slate-600">{service.description}</p>
-        <p className="mt-3 text-sm leading-6 text-slate-500">This service is delivered through the official Parivahan portal. Availability and document requirements can vary by state and RTO.</p>
+        <p className="font-mono text-[10px] tracking-[0.16em] text-slate-400">OFFICIAL HANDOFF</p>
+        <h2 className="font-display mt-2 text-3xl text-slate-50">Continue through the official portal.</h2>
+        <p className="mt-2 text-sm text-slate-400">{service.name}</p>
+        <p className="mt-5 text-sm leading-6 text-slate-300">{service.description}</p>
+        <p className="mt-3 text-sm leading-6 text-slate-400">This service is delivered through the official Parivahan portal. Availability and document requirements can vary by state and RTO.</p>
         {service.officialUrl ? (
           <motion.a
             {...scaleTap}
             href={service.officialUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-5 inline-flex rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-orange-600"
+            className="mt-5 inline-flex rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300"
           >
             Open official service
           </motion.a>
@@ -150,14 +151,14 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
   }
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-7">
+    <section className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-7">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[10px] tracking-[0.16em] text-slate-500">GUIDED CHECKPOINT</p>
-          <h2 className="font-display mt-2 text-3xl text-slate-900">{activeService.name}</h2>
-          <p className="mt-2 text-sm text-slate-500">{activeService.name} · step {currentStepIndex + 1} of {activeService.steps.length}</p>
+          <p className="font-mono text-[10px] tracking-[0.16em] text-slate-400">GUIDED CHECKPOINT</p>
+          <h2 className="font-display mt-2 text-3xl text-slate-50">{activeService.name}</h2>
+          <p className="mt-2 text-sm text-slate-400">{activeService.name} · step {currentStepIndex + 1} of {activeService.steps.length}</p>
         </div>
-        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">{activeService.category}</span>
+        <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium capitalize text-amber-300">{activeService.category.replace(/-/g, ' ')}</span>
       </div>
 
       <div
@@ -172,14 +173,14 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
               key={step.id}
               type="button"
               onClick={() => index <= currentStepIndex && goToStep(index)}
-              className={`relative min-w-max rounded-full px-3 py-1 text-xs transition-colors duration-200 ${isActive ? 'text-white' : isDone ? 'text-green-700' : 'text-slate-500'}`}
+              className={`relative min-w-max rounded-full px-3 py-1 text-xs transition-colors duration-200 ${isActive ? 'text-slate-950' : isDone ? 'text-emerald-300' : 'text-slate-300'}`}
             >
               {isActive ? (
-                <motion.span layoutId="step-pill-active" className="absolute inset-0 rounded-full bg-orange-500" transition={{ duration: DURATION.base, ease: EASE_OUT }} />
+                <motion.span layoutId="step-pill-active" className="absolute inset-0 rounded-full bg-amber-400" transition={{ duration: DURATION.base, ease: EASE_OUT }} />
               ) : isDone ? (
-                <span className="absolute inset-0 rounded-full bg-green-50" />
+                <span className="absolute inset-0 rounded-full bg-emerald-500/10" />
               ) : (
-                <span className="absolute inset-0 rounded-full bg-slate-100" />
+                <span className="absolute inset-0 rounded-full bg-slate-500/10" />
               )}
               <span className="relative">{index + 1}. {step.title}</span>
             </button>
@@ -197,13 +198,13 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
         {currentStep ? (
             <div
               key={currentStep.id}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              className="rounded-2xl border border-slate-800 bg-slate-800 p-4"
             >
-              <h3 className="font-medium text-slate-900">{currentStep.title}</h3>
+              <h3 className="font-medium text-slate-50">{currentStep.title}</h3>
               {currentStep.id === 'preview' ? (
                 <div className="mt-4">
-                  <p className="text-sm text-slate-600">Keep these ready before you begin:</p>
-                  <ul className="mt-2 space-y-1 text-sm text-slate-500">
+                  <p className="text-sm text-slate-300">Keep these ready before you begin:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-slate-400">
                     {activeService.requiredDocuments.map((document) => <li key={document}>{document}</li>)}
                   </ul>
                 </div>
@@ -212,10 +213,27 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                 {currentStep.fields.map((field) => {
                   const isConfirmation = field === 'acknowledgement' || field === 'declaration';
                   if (field === 'vehicleId') {
+                    if (vehicles.length === 0) {
+                      return (
+                        <div key={field} className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                          <p className="text-sm font-medium text-amber-300">You don&apos;t have a linked vehicle yet</p>
+                          <p className="mt-1 text-sm leading-6 text-slate-300">Add one so this checkpoint can prefill it — it only takes a moment, and this journey will be waiting for you when you're back.</p>
+                          {onAddVehicle ? (
+                            <button
+                              type="button"
+                              onClick={onAddVehicle}
+                              className="mt-3 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300"
+                            >
+                              Add a vehicle
+                            </button>
+                          ) : null}
+                        </div>
+                      );
+                    }
                     return (
-                      <label key={field} className="block text-sm text-slate-700">
+                      <label key={field} className="block text-sm text-slate-300">
                         Select vehicle
-                        <select value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors duration-200 focus:border-orange-400">
+                        <select value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 focus:border-amber-400">
                           <option value="">Choose a linked vehicle</option>
                           {vehicles.map((vehicle) => <option key={vehicle.vehicleId} value={vehicle.vehicleId}>{vehicle.registrationNumber} · {vehicle.vehicleType}</option>)}
                         </select>
@@ -225,8 +243,8 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
 
                   if (isConfirmation) {
                     return (
-                      <label key={field} className="flex cursor-pointer items-start gap-3 text-sm text-slate-700">
-                        <input type="checkbox" checked={values[field] === 'true'} onChange={(event) => setField(field, String(event.target.checked))} className="mt-1 h-4 w-4 accent-orange-500" />
+                      <label key={field} className="flex cursor-pointer items-start gap-3 text-sm text-slate-300">
+                        <input type="checkbox" checked={values[field] === 'true'} onChange={(event) => setField(field, String(event.target.checked))} className="mt-1 h-4 w-4 accent-amber-400" />
                         <span>I confirm that the information provided is accurate.</span>
                       </label>
                     );
@@ -235,7 +253,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                   const options = activeService.fieldOptions?.[field];
                   if (options) {
                     return (
-                      <div key={field} className="block text-sm text-slate-700">
+                      <div key={field} className="block text-sm text-slate-300">
                         {formatField(field)}
                         <div className="mt-2 flex flex-wrap gap-2">
                           {options.map((option) => {
@@ -247,7 +265,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                                 type="button"
                                 aria-pressed={isSelected}
                                 onClick={() => setField(field, option)}
-                                className={`rounded-full border px-3 py-1.5 text-sm transition-colors duration-150 ${isSelected ? 'border-orange-300 bg-orange-50 text-orange-700' : 'border-slate-200 bg-white text-slate-600 hover:border-orange-200'}`}
+                                className={`rounded-full border px-3 py-1.5 text-sm transition-colors duration-150 ${isSelected ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-amber-500/30'}`}
                               >
                                 {option}
                               </motion.button>
@@ -261,10 +279,10 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                   const isVoiceActiveHere = voiceField === field;
                   const canDictate = field !== 'attachments';
                   return (
-                    <label key={field} className="block text-sm text-slate-700">
+                    <label key={field} className="block text-sm text-slate-300">
                       {formatField(field)}
                       <div className="mt-2 flex gap-2">
-                        <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={field === 'attachments' ? 'Comma-separated file names' : `Enter ${formatField(field).toLowerCase()}`} className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-orange-400" />
+                        <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={field === 'attachments' ? 'Comma-separated file names' : `Enter ${formatField(field).toLowerCase()}`} className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-amber-400" />
                         {canDictate ? (
                           <motion.button
                             {...scaleTap}
@@ -274,7 +292,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                               setVoiceField(field);
                               void voice.toggle();
                             }}
-                            className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-medium transition-colors duration-150 ${isVoiceActiveHere && voice.isListening ? 'border-rose-300 bg-rose-50 text-rose-600' : 'border-slate-300 text-slate-600 hover:border-orange-300'}`}
+                            className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-medium transition-colors duration-150 ${isVoiceActiveHere && voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-amber-500/30'}`}
                           >
                             {isVoiceActiveHere && voice.isListening ? 'Stop' : isVoiceActiveHere && voice.isTranscribing ? '…' : '🎙'}
                           </motion.button>
@@ -285,13 +303,13 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                             type="button"
                             disabled={isLocating}
                             onClick={() => useMyLocation(field)}
-                            className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:border-orange-300 disabled:opacity-50"
+                            className="shrink-0 rounded-xl border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:border-amber-500/30 disabled:opacity-50"
                           >
                             {isLocating ? '…' : '📍 Use my location'}
                           </motion.button>
                         ) : null}
                       </div>
-                      {isVoiceActiveHere && voice.isTranscribing ? <p className="mt-1.5 text-xs text-orange-600">Transcribing what you said…</p> : null}
+                      {isVoiceActiveHere && voice.isTranscribing ? <p className="mt-1.5 text-xs text-amber-400">Transcribing what you said…</p> : null}
                     </label>
                   );
                 })}
@@ -310,33 +328,33 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
           type="button"
           onClick={() => goToStep(Math.max(0, currentStepIndex - 1))}
           disabled={currentStepIndex === 0 || isSubmitting}
-          className="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 transition-colors duration-150 hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition-colors duration-150 hover:border-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Back
         </button>
         {isLastStep ? (
-          <button type="button" onClick={() => void submit()} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={() => void submit()} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60">
             {isSubmitting ? 'Submitting...' : 'Submit case'}
           </button>
         ) : (
-          <button type="button" onClick={() => goToStep(Math.min(activeService.steps.length - 1, currentStepIndex + 1))} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={() => goToStep(Math.min(activeService.steps.length - 1, currentStepIndex + 1))} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60">
             Continue
           </button>
         )}
       </div>
       <AnimatePresence>
         {message ? (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4">
-            <p className="text-sm text-green-700">{message}</p>
+          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+            <p className="text-sm text-emerald-300">{message}</p>
             {submittedCaseId && onViewCase ? (
-              <button type="button" onClick={() => onViewCase(submittedCaseId)} className="mt-3 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-orange-600">
+              <button type="button" onClick={() => onViewCase(submittedCaseId)} className="mt-3 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300">
                 View &amp; download this case -&gt;
               </button>
             ) : null}
           </motion.div>
         ) : null}
-        {error ? <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-rose-600">{error}</motion.p> : null}
-        {voice.error ? <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-rose-600">{voice.error}</motion.p> : null}
+        {error ? <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-rose-300">{error}</motion.p> : null}
+        {voice.error ? <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-rose-300">{voice.error}</motion.p> : null}
       </AnimatePresence>
     </section>
   );

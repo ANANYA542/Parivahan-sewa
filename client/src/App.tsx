@@ -12,6 +12,7 @@ import {
   type SubmissionData
 } from '@parivahan/shared';
 import { DURATION, EASE_OUT, scaleTap } from './lib/motion';
+import { SEVERITY_STYLES } from './lib/severity';
 import { loadSession, saveSession, clearSession } from './lib/authStore';
 import { navigateTo, navigateToJourney, useAppRoute, type AppRoute } from './lib/appRoutes';
 import { Hero } from './components/hero/Hero';
@@ -63,8 +64,8 @@ function PageHeading({ route }: { route: AppRoute }) {
   const page = pageCopy[route];
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-4xl leading-[1.05] tracking-tight text-slate-900 md:text-5xl">{page.title}</h1>
-      <p className="mt-3 text-base leading-7 text-slate-500">{page.description}</p>
+      <h1 className="font-display text-4xl leading-[1.05] tracking-tight text-slate-50 md:text-5xl">{page.title}</h1>
+      <p className="mt-3 text-base leading-7 text-slate-400">{page.description}</p>
     </div>
   );
 }
@@ -85,6 +86,7 @@ export default function App() {
   const [mobilityIntelligence, setMobilityIntelligence] = useState<MobilityIntelligenceSnapshot | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [selectedCase, setSelectedCase] = useState<CaseDetail | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isLoadingCase, setIsLoadingCase] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEscalating, setIsEscalating] = useState(false);
@@ -211,6 +213,7 @@ export default function App() {
   }, [journeyServiceId]);
 
   async function selectCase(caseId: string) {
+    setSelectedCaseId(caseId);
     setIsLoadingCase(true);
     setCaseActionError(null);
     try {
@@ -319,6 +322,7 @@ export default function App() {
     setMobilityIntelligence(null);
     setNotifications([]);
     setSelectedCase(null);
+    setSelectedCaseId(null);
     setCaseActionError(null);
     navigateTo('dashboard');
     setLoadError(message ?? null);
@@ -355,18 +359,18 @@ export default function App() {
                   animate={{ opacity: 1, transform: 'translateY(0)' }}
                   transition={{ duration: DURATION.base, ease: EASE_OUT }}
                   role="status"
-                  className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4"
+                  className={`mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-5 py-4 ${SEVERITY_STYLES[autopilotNudge.severity].container}`}
                 >
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-orange-700">Renewal autopilot</p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">{autopilotNudge.title}</p>
-                    <p className="mt-1 text-sm text-orange-800/80">{autopilotNudge.message}</p>
+                    <p className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${SEVERITY_STYLES[autopilotNudge.severity].label}`}>Renewal autopilot</p>
+                    <p className="mt-1 text-sm font-medium text-slate-50">{autopilotNudge.title}</p>
+                    <p className="mt-1 text-sm text-slate-300">{autopilotNudge.message}</p>
                   </div>
                   <motion.button
                     {...scaleTap}
                     type="button"
                     onClick={() => openServiceJourney(autopilotNudge.actionServiceId!)}
-                    className="shrink-0 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white transition-colors duration-150 hover:bg-orange-600"
+                    className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors duration-150 ${SEVERITY_STYLES[autopilotNudge.severity].button}`}
                   >
                     Renew now
                   </motion.button>
@@ -399,7 +403,7 @@ export default function App() {
             return (
               <>
                 <PageHeading route={route} />
-                <div className="mt-7 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">Loading this journey...</div>
+                <div className="mt-7 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-400 shadow-sm">Loading this journey...</div>
               </>
             );
           }
@@ -421,6 +425,7 @@ export default function App() {
                     onSubmit={handleSubmit}
                     initialValues={journeyPrefill ?? undefined}
                     onViewCase={handleViewCase}
+                    onAddVehicle={() => navigateTo('dashboard')}
                   />
                 )}
               </div>
@@ -439,7 +444,7 @@ export default function App() {
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7"><CaseTimeline cases={identity?.cases ?? []} selectedCase={selectedCase} isLoadingDetail={isLoadingCase} isEscalating={isEscalating} isDownloading={isDownloading} actionError={caseActionError} onSelect={(caseId) => void selectCase(caseId)} onEscalate={(caseId) => void handleEscalate(caseId)} onDownload={(caseId) => void handleDownload(caseId)} /></div>
+            <div className="mt-7"><CaseTimeline cases={identity?.cases ?? []} selectedCase={selectedCase} selectedCaseId={selectedCaseId} isLoadingDetail={isLoadingCase} isEscalating={isEscalating} isDownloading={isDownloading} actionError={caseActionError} onSelect={(caseId) => void selectCase(caseId)} onEscalate={(caseId) => void handleEscalate(caseId)} onDownload={(caseId) => void handleDownload(caseId)} onStartRequest={() => navigateTo('journey')} /></div>
           </>
         );
       case 'map':
@@ -462,7 +467,21 @@ export default function App() {
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-500">This view is illustrative only in the current prototype — see My Vahan on the dashboard for the underlying document status.</div>
+            <div className="mt-7 rounded-2xl border border-slate-800 bg-slate-800 px-5 py-4 text-sm text-slate-400">This view is illustrative only in the current prototype — see My Vahan on the dashboard for the underlying document status.</div>
+            <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-slate-800 px-6 py-16 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-xl" aria-hidden="true">
+                {route === 'health' ? '🩺' : route === 'pollution' ? '🌫️' : '⛽'}
+              </span>
+              <p className="mt-4 text-sm font-medium text-slate-300">This view is still being built.</p>
+              <p className="mt-1 max-w-sm text-sm leading-6 text-slate-400">In the meantime, My Vahan on the dashboard already tracks the real document status behind this.</p>
+              <button
+                type="button"
+                onClick={() => navigateTo('dashboard')}
+                className="mt-5 rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition-colors duration-150 hover:border-slate-600 hover:text-slate-50"
+              >
+                Back to dashboard
+              </button>
+            </div>
           </>
         );
     }
@@ -473,7 +492,7 @@ export default function App() {
       <Shell>
         <AppNavigation activeRoute={route} userName={session?.user.name ?? null} unreadCount={unreadCount} onNavigate={navigateTo} onSignOut={() => handleLogout()} />
         {loadError ? (
-          <motion.div initial={{ opacity: 0, transform: 'translateY(-8px)' }} animate={{ opacity: 1, transform: 'translateY(0)' }} role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          <motion.div initial={{ opacity: 0, transform: 'translateY(-8px)' }} animate={{ opacity: 1, transform: 'translateY(0)' }} role="alert" className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
             {loadError}
           </motion.div>
         ) : null}
@@ -486,7 +505,7 @@ export default function App() {
         <main key={route}>
           {pageContent()}
         </main>
-        {userId ? (
+        {userId && !['health', 'pollution', 'fuel'].includes(route) ? (
           <div className="mt-7">
             <StandingAgentPanel userId={userId} onIntentFromVoice={async (text) => { await handleResolveIntent(text); }} />
           </div>

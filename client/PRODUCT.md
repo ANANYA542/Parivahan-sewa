@@ -24,7 +24,7 @@ Users begin with the Intent Assistant, complete guided flows, then follow their 
 
 ## Capabilities and Constraints
 
-- Phase 1 and Phase 2 visual designs are incumbent authority and must not be restyled.
+- The dark retheme (see Brand Commitments) is the new incumbent visual baseline and must not be reverted to the earlier light theme; further visual work builds on it rather than restyling from scratch.
 - The Standing Agent may use only documented tool results; it has no direct database access.
 - GPT-OSS 120B is served through the Groq OpenAI-compatible API.
 - Compliance verification and scam intelligence are demo-only until official data sources are integrated.
@@ -32,7 +32,7 @@ Users begin with the Intent Assistant, complete guided flows, then follow their 
 
 ## Brand Commitments
 
-Preserve the existing dark, calm, high-legibility product interface and its amber, emerald, and slate status language.
+A dark, calm, high-legibility product interface using amber (brand/warning), emerald (success), rose (danger/critical), and slate (neutral) status language — implemented across the client in this pass, correcting an earlier light-themed build that had drifted from this commitment.
 
 ## Evidence on Hand
 

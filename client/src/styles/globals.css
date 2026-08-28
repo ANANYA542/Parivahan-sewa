@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family: "DM Sans", "Avenir Next", sans-serif;
 }
 
@@ -15,8 +15,8 @@ body,
 
 body {
   margin: 0;
-  background: #ffffff;
-  color: #1e293b;
+  background: #020617;
+  color: #cbd5e1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -30,12 +30,12 @@ body {
 }
 
 ::selection {
-  background: rgba(234, 88, 12, 0.18);
-  color: #7c2d12;
+  background: rgba(251, 191, 36, 0.25);
+  color: #451a03;
 }
 
 :focus-visible {
-  outline: 2px solid rgba(234, 88, 12, 0.6);
+  outline: 2px solid rgba(251, 191, 36, 0.8);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -46,4 +46,11 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* Darkens the free OpenStreetMap raster tiles to match the app's dark theme,
+   without depending on a key-gated dark-tile provider (CARTO's free dark_all
+   basemap now watermarks "API KEY REQUIRED" over unauthenticated requests). */
+.map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.7);
 }
