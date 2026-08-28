@@ -34,12 +34,12 @@ export function SmartMobilityMap({ layers }: SmartMobilityMapProps) {
   }
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-      <h2 className="text-xl font-semibold text-white">Smart Mobility Map</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-400">Case-history and reference overlays are independently toggleable. This is decision support, not a live traffic or sensor feed.</p>
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="text-xl font-semibold text-slate-900">Smart Mobility Map</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">Case-history and reference overlays are independently toggleable. This is decision support, not a live traffic or sensor feed.</p>
       <div className="mt-5 flex flex-wrap gap-2">
         {layers.map((layer) => (
-          <motion.button {...scaleTap} key={layer.layerId} type="button" onClick={() => toggleLayer(layer.layerId)} className={`rounded-full border px-3 py-1 text-xs transition-colors duration-200 ${visibleLayers.has(layer.layerId) ? 'border-white/20 bg-white/10 text-white' : 'border-white/10 text-slate-500'}`}>
+          <motion.button {...scaleTap} key={layer.layerId} type="button" onClick={() => toggleLayer(layer.layerId)} className={`rounded-full border px-3 py-1 text-xs transition-colors duration-200 ${visibleLayers.has(layer.layerId) ? 'border-slate-300 bg-slate-100 text-slate-900' : 'border-slate-200 text-slate-500'}`}>
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: layer.color }} />
             {layer.label}
           </motion.button>
@@ -49,7 +49,7 @@ export function SmartMobilityMap({ layers }: SmartMobilityMapProps) {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: DURATION.slow, ease: EASE_OUT }}
-        className="mt-5 h-80 overflow-hidden rounded-2xl border border-white/10 bg-slate-950"
+        className="mt-5 h-80 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"
       >
         <MapContainer center={[18.5204, 73.8567]} zoom={12} scrollWheelZoom={false} className="h-full w-full">
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />

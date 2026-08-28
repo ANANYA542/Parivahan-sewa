@@ -4,6 +4,7 @@ import type { AgentMessage, AgentResponse } from '@parivahan/shared';
 import { CoreDataService } from '../../common/core-data.service.js';
 import { MobilityIntelligenceService } from '../mobility-intelligence/mobility-intelligence.service.js';
 import { ComplianceService } from './compliance.service.js';
+import { RTO_KNOWLEDGE_BASE } from './rto-knowledge-base.js';
 
 type ToolCall = { id: string; function: { name: string; arguments: string } };
 type ChatMessage = { role: 'system' | 'user' | 'assistant' | 'tool'; content: string | null; tool_call_id?: string; tool_calls?: ToolCall[] };
@@ -56,18 +57,27 @@ export class AgentService {
     const priorHistory = session.history.length ? session.history : clientHistory;
 
     const messages: ChatMessage[] = [
-      { role: 'system', content: 'You are the Parivahan Track Standing Agent. Give concise, practical decision support. Use tools for citizen-specific facts. Never imply an official registry check, payment, submission, or document issuance occurred. Compliance results are demo-only unless stated otherwise. You have no database access beyond the tools.' },
+      {
+        role: 'system',
+        content: `You are the Parivahan Track assistant. Give concise, practical, plain-language guidance — the citizen you're talking to may not be familiar with government or technical terms, so avoid jargon and explain any you must use. Use tools for citizen-specific facts (their own cases, documents). Use the reference knowledge below for general RTO/Parivahan domain facts — treat every figure in it as illustrative and tell the citizen to confirm current fees/SLAs on the official portal, never state them as guaranteed-current. Never imply an official registry check, payment, submission, or document issuance occurred. Compliance results are demo-only unless stated otherwise. You have no database access beyond the tools.\n\nREFERENCE KNOWLEDGE:\n${RTO_KNOWLEDGE_BASE}`
+      },
       ...priorHistory.slice(-8).map((item) => ({ role: item.role, content: item.content })),
       { role: 'user', content: message }
     ];
     const toolsUsed: string[] = [];
 
     for (let round = 0; round < 4; round += 1) {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: MODEL, messages, tools: TOOL_DEFINITIONS, tool_choice: 'auto', temperature: 0.2, max_tokens: 700 })
-      });
+      let response: Response;
+      try {
+        response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: MODEL, messages, tools: TOOL_DEFINITIONS, tool_choice: 'auto', temperature: 0.2, max_tokens: 700 }),
+          signal: AbortSignal.timeout(20_000)
+        });
+      } catch {
+        throw new ServiceUnavailableException('Standing Agent did not respond in time. Please try again.');
+      }
       const payload = await response.json().catch(() => null) as { choices?: Array<{ message?: { content?: string | null; tool_calls?: ToolCall[] } }>; error?: { message?: string } } | null;
       const choice = payload?.choices?.[0]?.message;
       if (!response.ok || !choice) throw new ServiceUnavailableException(payload?.error?.message ?? 'Standing Agent could not respond.');
@@ -80,7 +90,17 @@ export class AgentService {
       messages.push({ role: 'assistant', content: choice.content ?? null, tool_calls: choice.tool_calls });
       for (const call of choice.tool_calls) {
         toolsUsed.push(call.function.name);
-        messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(this.executeTool(userId, call.function.name, call.function.arguments)) });
+        // Tool results must never throw here — a hallucinated/stale id from the
+        // model (e.g. a caseId that doesn't exist) would otherwise escape this
+        // loop as an uncaught NotFoundException and abort the whole reply with
+        // a bare 404 instead of letting the assistant say so in plain language.
+        let result: unknown;
+        try {
+          result = this.executeTool(userId, call.function.name, call.function.arguments);
+        } catch (reason) {
+          result = { error: reason instanceof Error ? reason.message : 'That request could not be completed.' };
+        }
+        messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
       }
     }
     throw new ServiceUnavailableException('Standing Agent reached its tool-call limit. Please try a more specific request.');
@@ -113,7 +133,16 @@ export class AgentService {
   private executeTool(userId: string, name: string, rawArguments: string): unknown {
     const args = this.parseArguments(rawArguments);
     switch (name) {
-      case 'getCase': return this.coreData.getCase(String(args.caseId));
+      case 'getCase': {
+        // coreData.getCase() returns a case by id alone with no ownership check
+        // (unlike the guarded /cases/:caseId route, which checks it in the
+        // controller) — this tool must enforce that check itself, or a
+        // hallucinated or guessed caseId could leak another citizen's case
+        // details (including their submissionData) into this chat.
+        const caseDetail = this.coreData.getCase(String(args.caseId));
+        if (caseDetail.userId !== userId) return { error: 'That case does not belong to this citizen.' };
+        return caseDetail;
+      }
       case 'getPointsLedger': return this.compliance.getPointsLedger(userId);
       case 'getDocumentStatus': return this.coreData.getIdentityBundle(userId).vehicles.map((vehicle) => ({ registrationNumber: vehicle.registrationNumber, documentStatus: vehicle.documentStatus }));
       case 'draftEscalation': return { status: 'draft_only', caseId: String(args.caseId), draft: `Escalation draft for ${String(args.caseId)}: ${String(args.reason)}. Review and submit through the case workflow.` };

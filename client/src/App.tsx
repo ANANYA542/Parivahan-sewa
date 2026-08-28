@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { MotionConfig, motion } from 'framer-motion';
 import {
   APP_NAME,
   type AppNotification,
@@ -13,14 +13,16 @@ import {
 } from '@parivahan/shared';
 import { DURATION, EASE_OUT, scaleTap } from './lib/motion';
 import { loadSession, saveSession, clearSession } from './lib/authStore';
-import { navigateTo, useAppRoute, type AppRoute } from './lib/appRoutes';
+import { navigateTo, navigateToJourney, useAppRoute, type AppRoute } from './lib/appRoutes';
 import { Hero } from './components/hero/Hero';
 import { Shell } from './components/layout/Shell';
 import { AppNavigation } from './components/layout/AppNavigation';
 import { LoginScreen } from './components/auth/LoginScreen';
+import { FloatingVoiceAssistant } from './components/voice/FloatingVoiceAssistant';
 import { MyVahanDashboard } from './components/dashboard/MyVahanDashboard';
 import { IntentAssistant } from './components/intent/IntentAssistant';
 import { GuidedNavigator } from './components/navigator/GuidedNavigator';
+import { JourneyPreview } from './components/navigator/JourneyPreview';
 import { CaseTimeline } from './components/cases/CaseTimeline';
 import { AccidentMapModal } from './components/map/AccidentMapModal';
 import { MobilityScoreCard } from './components/intelligence/MobilityScoreCard';
@@ -40,14 +42,15 @@ import {
   getWorkflow,
   markNotificationRead,
   resolveIntent,
-  setAuthToken
+  setAuthToken,
+  setOnUnauthorized
 } from './lib/api';
 
 const pageCopy: Record<AppRoute, { title: string; description: string }> = {
   dashboard: { title: 'Your mobility, at a glance.', description: 'See the vehicle records and time-sensitive actions that need your attention today.' },
   services: { title: 'Find the service that fits.', description: 'Browse every available transport service by the task you need to complete.' },
   journey: { title: 'Take one step at a time.', description: 'Describe your need or continue the guided service route you selected.' },
-  cases: { title: 'Track every submitted case.', description: 'Review its current stage, deadline, history, acknowledgement, and escalation options.' },
+  cases: { title: 'Track every submitted case.', description: 'See where each one stands, when it is due, what happened, and download your copy any time.' },
   map: { title: 'See mobility context around you.', description: 'Explore illustrative reference overlays and case-history context. This is not live traffic data.' },
   alerts: { title: 'Keep the next action visible.', description: 'Review document reminders and case updates, then act on the relevant service.' },
   health: { title: 'Vehicle health score.', description: 'A rule-based read on your vehicle’s compliance posture, not a diagnostic sensor feed.' },
@@ -59,14 +62,14 @@ function PageHeading({ route }: { route: AppRoute }) {
   const page = pageCopy[route];
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-4xl leading-[1.05] tracking-tight text-white md:text-5xl">{page.title}</h1>
-      <p className="mt-3 text-base leading-7 text-slate-400">{page.description}</p>
+      <h1 className="font-display text-4xl leading-[1.05] tracking-tight text-slate-900 md:text-5xl">{page.title}</h1>
+      <p className="mt-3 text-base leading-7 text-slate-500">{page.description}</p>
     </div>
   );
 }
 
 export default function App() {
-  const route = useAppRoute();
+  const { route, journeyServiceId } = useAppRoute();
   const [session, setSession] = useState<AuthSession | null>(() => {
     const existing = loadSession();
     if (existing) setAuthToken(existing.token);
@@ -75,6 +78,8 @@ export default function App() {
 
   const [identity, setIdentity] = useState<Awaited<ReturnType<typeof getIdentity>> | null>(null);
   const [selectedService, setSelectedService] = useState<ServiceDefinition | null>(null);
+  const [journeyStarted, setJourneyStarted] = useState(false);
+  const [journeyPrefill, setJourneyPrefill] = useState<Record<string, string> | null>(null);
   const [services, setServices] = useState<ServiceDefinition[]>([]);
   const [mobilityIntelligence, setMobilityIntelligence] = useState<MobilityIntelligenceSnapshot | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -86,6 +91,7 @@ export default function App() {
   const [caseActionError, setCaseActionError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [onboardingSkipped, setOnboardingSkipped] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   const userId = session?.user.userId ?? null;
 
@@ -112,6 +118,12 @@ export default function App() {
       setLoadError(reason instanceof Error ? reason.message : 'Unable to refresh your profile.');
     }
   }
+
+  useEffect(() => {
+    setOnUnauthorized(() => handleLogout('Your session has expired. Please sign in again.'));
+    return () => setOnUnauthorized(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let isCurrent = true;
@@ -172,6 +184,31 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  // The guided journey for a specific service lives at its own URL,
+  // /journey/:serviceId — so reloading, sharing, or using the browser's
+  // back/forward always lands on a consistent, correctly-loaded page
+  // instead of relying on in-memory state that a stale hot-reload or a
+  // history navigation could desync from what's actually rendered.
+  useEffect(() => {
+    if (!journeyServiceId) {
+      setSelectedService(null);
+      setJourneyStarted(false);
+      return;
+    }
+    let isCurrent = true;
+    setJourneyStarted(false);
+    void getWorkflow(journeyServiceId)
+      .then((service) => {
+        if (isCurrent) setSelectedService(service);
+      })
+      .catch((reason) => {
+        if (isCurrent) setLoadError(reason instanceof Error ? reason.message : 'Unable to load the selected service.');
+      });
+    return () => {
+      isCurrent = false;
+    };
+  }, [journeyServiceId]);
+
   async function selectCase(caseId: string) {
     setIsLoadingCase(true);
     setCaseActionError(null);
@@ -187,23 +224,19 @@ export default function App() {
   async function handleResolveIntent(query: string): Promise<IntentResolution> {
     const { intent } = await resolveIntent(query);
     if (intent.serviceId) {
-      setSelectedService(await getWorkflow(intent.serviceId));
+      navigateToJourney(intent.serviceId);
     }
     return intent;
   }
 
-  async function handleSelectService(serviceId: string): Promise<boolean> {
-    try {
-      setSelectedService(await getWorkflow(serviceId));
-      return true;
-    } catch (reason) {
-      setLoadError(reason instanceof Error ? reason.message : 'Unable to load the selected service.');
-      return false;
-    }
+  function openServiceJourney(serviceId: string, prefill?: Record<string, string>) {
+    setJourneyPrefill(prefill ?? null);
+    navigateToJourney(serviceId);
   }
 
-  async function openServiceJourney(serviceId: string) {
-    if (await handleSelectService(serviceId)) navigateTo('journey');
+  function handleViewCase(caseId: string) {
+    navigateTo('cases');
+    void selectCase(caseId);
   }
 
   async function handleSubmit(input: { serviceId: string; vehicleId?: string; submissionData: SubmissionData }): Promise<CaseRecord> {
@@ -249,7 +282,7 @@ export default function App() {
     try {
       await downloadCaseAcknowledgement(caseId);
     } catch (reason) {
-      setCaseActionError(reason instanceof Error ? reason.message : 'Unable to generate the acknowledgement.');
+      setCaseActionError(reason instanceof Error ? reason.message : 'Unable to prepare your copy right now.');
     } finally {
       setIsDownloading(false);
     }
@@ -271,19 +304,23 @@ export default function App() {
     navigateTo('dashboard');
   }
 
-  function handleLogout() {
+  function handleLogout(message?: string) {
     setAuthToken(null);
     clearSession();
     setSession(null);
     setIdentity(null);
     setSelectedService(null);
-    setServices([]);
+    setJourneyStarted(false);
+    // Not clearing `services` — it's public catalog data, not session state,
+    // and the effect that loads it only runs once on mount; clearing it here
+    // used to leave the Services page permanently empty (0 cards) for the
+    // rest of the browser session after signing out, until a full reload.
     setMobilityIntelligence(null);
     setNotifications([]);
     setSelectedCase(null);
-    setLoadError(null);
     setCaseActionError(null);
     navigateTo('dashboard');
+    setLoadError(message ?? null);
   }
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
@@ -292,7 +329,7 @@ export default function App() {
     switch (route) {
       case 'dashboard':
         if (!session) {
-          return <LoginScreen onSignedIn={handleSignedIn} />;
+          return <LoginScreen onSignedIn={handleSignedIn} onOpenAssistant={() => setIsAssistantOpen(true)} />;
         }
         {
           const autopilotNudge = notifications.find((item) => !item.read && item.actionServiceId && (item.severity === 'critical' || item.severity === 'warning'));
@@ -317,24 +354,24 @@ export default function App() {
                   animate={{ opacity: 1, transform: 'translateY(0)' }}
                   transition={{ duration: DURATION.base, ease: EASE_OUT }}
                   role="status"
-                  className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/25 bg-amber-400/10 px-5 py-4"
+                  className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4"
                 >
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200">Renewal autopilot</p>
-                    <p className="mt-1 text-sm font-medium text-white">{autopilotNudge.title}</p>
-                    <p className="mt-1 text-sm text-amber-100/80">{autopilotNudge.message}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-orange-700">Renewal autopilot</p>
+                    <p className="mt-1 text-sm font-medium text-slate-900">{autopilotNudge.title}</p>
+                    <p className="mt-1 text-sm text-orange-800/80">{autopilotNudge.message}</p>
                   </div>
                   <motion.button
                     {...scaleTap}
                     type="button"
-                    onClick={() => void openServiceJourney(autopilotNudge.actionServiceId!)}
-                    className="shrink-0 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors duration-150 hover:bg-amber-300"
+                    onClick={() => openServiceJourney(autopilotNudge.actionServiceId!)}
+                    className="shrink-0 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white transition-colors duration-150 hover:bg-orange-600"
                   >
                     Renew now
                   </motion.button>
                 </motion.div>
               ) : null}
-              <div className="mt-7 grid gap-6 xl:grid-cols-2">
+              <div className="mt-7 grid grid-cols-1 gap-6 xl:grid-cols-2">
                 <MyVahanDashboard identity={identity} />
                 <MobilityScoreCard snapshot={mobilityIntelligence} />
               </div>
@@ -345,17 +382,51 @@ export default function App() {
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7"><ServiceCatalog services={services} selectedServiceId={selectedService?.serviceId ?? null} onSelect={(serviceId) => void openServiceJourney(serviceId)} /></div>
+            <div className="mt-7"><ServiceCatalog services={services} selectedServiceId={selectedService?.serviceId ?? null} onSelect={(serviceId) => openServiceJourney(serviceId)} /></div>
           </>
         );
       case 'journey':
+        if (journeyServiceId) {
+          // A dedicated page per service — its own URL, reloadable and
+          // bookmarkable, separate from the AI/voice journey guide below.
+          if (!selectedService) {
+            return (
+              <>
+                <PageHeading route={route} />
+                <div className="mt-7 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">Loading this journey...</div>
+              </>
+            );
+          }
+          return (
+            <>
+              <PageHeading route={route} />
+              <div className="mt-7">
+                {!journeyStarted ? (
+                  <JourneyPreview
+                    service={selectedService}
+                    onStart={() => setJourneyStarted(true)}
+                    onChooseAnother={() => navigateTo('services')}
+                  />
+                ) : (
+                  <GuidedNavigator
+                    service={selectedService}
+                    vehicles={identity?.vehicles ?? []}
+                    isSubmitting={isSubmitting}
+                    onSubmit={handleSubmit}
+                    initialValues={journeyPrefill ?? undefined}
+                    onViewCase={handleViewCase}
+                  />
+                )}
+              </div>
+            </>
+          );
+        }
+        // The bare /journey page — "Start a request" in the nav — is the
+        // AI + voice journey guide on its own, not paired with a form.
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-              <IntentAssistant onResolve={handleResolveIntent} />
-              <GuidedNavigator service={selectedService} vehicles={identity?.vehicles ?? []} isSubmitting={isSubmitting} onSubmit={handleSubmit} />
-            </div>
+            <div className="mt-7"><IntentAssistant onResolve={handleResolveIntent} /></div>
           </>
         );
       case 'cases':
@@ -369,14 +440,14 @@ export default function App() {
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7"><AccidentMapModal layers={mobilityIntelligence?.mapLayers ?? []} onStartGuidedReport={() => void openServiceJourney('svc-accident-report')} /></div>
+            <div className="mt-7"><AccidentMapModal layers={mobilityIntelligence?.mapLayers ?? []} onStartGuidedReport={(locatedAt) => openServiceJourney('svc-accident-report', locatedAt ? { location: `${locatedAt} (auto-detected)` } : undefined)} /></div>
           </>
         );
       case 'alerts':
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7"><MobilityNudges notifications={notifications} onAction={(serviceId) => void openServiceJourney(serviceId)} onMarkRead={(notificationId) => void handleMarkNotificationRead(notificationId)} /></div>
+            <div className="mt-7"><MobilityNudges notifications={notifications} onAction={(serviceId) => openServiceJourney(serviceId)} onMarkRead={(notificationId) => void handleMarkNotificationRead(notificationId)} /></div>
           </>
         );
       case 'health':
@@ -385,7 +456,7 @@ export default function App() {
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-slate-400">This view is illustrative only in the current prototype — see My Vahan on the dashboard for the underlying document status.</div>
+            <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-500">This view is illustrative only in the current prototype — see My Vahan on the dashboard for the underlying document status.</div>
           </>
         );
     }
@@ -394,18 +465,20 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <Shell>
-        <AppNavigation activeRoute={route} userName={session?.user.name ?? null} unreadCount={unreadCount} onNavigate={navigateTo} onSignOut={handleLogout} />
+        <AppNavigation activeRoute={route} userName={session?.user.name ?? null} unreadCount={unreadCount} onNavigate={navigateTo} onSignOut={() => handleLogout()} />
         {loadError ? (
-          <motion.div initial={{ opacity: 0, transform: 'translateY(-8px)' }} animate={{ opacity: 1, transform: 'translateY(0)' }} role="alert" className="rounded-2xl border border-rose-300/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+          <motion.div initial={{ opacity: 0, transform: 'translateY(-8px)' }} animate={{ opacity: 1, transform: 'translateY(0)' }} role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
             {loadError}
           </motion.div>
         ) : null}
-        <main>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={route} initial={{ opacity: 0, transform: 'translateY(12px)' }} animate={{ opacity: 1, transform: 'translateY(0)' }} exit={{ opacity: 0, transform: 'translateY(-8px)' }} transition={{ duration: DURATION.base, ease: EASE_OUT }}>
-              {pageContent()}
-            </motion.div>
-          </AnimatePresence>
+        {/* Plain conditional rendering here, not AnimatePresence mode="wait" — confirmed via
+            browser testing (real, human-paced interaction, not just automation speed) that
+            after completing a multi-step guided flow, the page-transition exit animation
+            can get stuck, permanently blocking the next route's content from ever mounting.
+            That's a real dead end in the primary citizen journey, not a cosmetic issue, so
+            the fade-transition is removed rather than risk it — reliability over polish here. */}
+        <main key={route}>
+          {pageContent()}
         </main>
         {userId ? (
           <div className="mt-7">
@@ -413,6 +486,7 @@ export default function App() {
           </div>
         ) : null}
       </Shell>
+      <FloatingVoiceAssistant open={isAssistantOpen} onOpenChange={setIsAssistantOpen} onResolve={handleResolveIntent} />
     </MotionConfig>
   );
 }

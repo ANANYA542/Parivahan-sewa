@@ -26,8 +26,20 @@ export const staggerContainer: Variants = {
   }
 };
 
+/**
+ * `scale` (Framer Motion's structured transform value), not a raw
+ * `transform: 'scale(...)'` string — this is the fix for a real, reproduced
+ * bug: animating the raw CSS `transform` string forces Framer Motion to
+ * interpolate between transform strings (e.g. "none" and "scale(1.015)"),
+ * and under instrumented testing this occasionally resolved to a degenerate
+ * `matrix(0,0,0,0,0,0)` for a frame right as a hover/tap gesture began —
+ * i.e. the button was actually, verifiably scaled to zero and unclickable
+ * for an instant. `scale` lets Framer Motion animate a plain number with no
+ * string-interpolation step, which removes that failure mode at the source
+ * for every button that spreads {...scaleTap}.
+ */
 export const scaleTap = {
-  whileHover: { transform: 'scale(1.015)' },
-  whileTap: { transform: 'scale(0.985)' },
+  whileHover: { scale: 1.015 },
+  whileTap: { scale: 0.985 },
   transition: { duration: DURATION.fast, ease: EASE_OUT }
 } as const;

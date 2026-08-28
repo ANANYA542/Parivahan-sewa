@@ -45,7 +45,7 @@ export class MobilityIntelligenceService implements OnModuleInit, OnModuleDestro
       computedAt: new Date().toISOString(),
       score,
       complianceAlerts,
-      nudges: buildMobilityNudges(bundle, score, complianceAlerts),
+      nudges: buildMobilityNudges(score, complianceAlerts),
       mapLayers: buildMobilityMapLayers(bundle)
     };
 

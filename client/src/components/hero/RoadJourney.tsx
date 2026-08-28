@@ -81,18 +81,18 @@ const STOPS: ServiceStop[] = [
 function CarIcon() {
   return (
     <svg viewBox="0 0 48 24" width="40" height="20" style={{ display: 'block' }}>
-      <ellipse cx="24" cy="21.5" rx="17" ry="1.6" fill="#000" opacity="0.28" />
+      <ellipse cx="24" cy="21.5" rx="17" ry="1.6" fill="#000" opacity="0.15" />
       <path
         d="M6 16.5c0-1.4.8-2.6 2-3.2l3.4-1.7 3-4.3c.7-1 1.9-1.6 3.1-1.6h9c1.4 0 2.7.7 3.4 1.9l2.6 4.2 3.4.8c1.6.4 2.7 1.8 2.7 3.4v1.1c0 .9-.7 1.6-1.6 1.6h-1.1a3.4 3.4 0 1 0-6.7-.6H17.9a3.4 3.4 0 1 0-6.7.6H8a2 2 0 0 1-2-2z"
-        fill="#f59e0b"
+        fill="#f97316"
       />
-      <path d="M15 9.2 13 13h7.4V8.6h-3.6c-.7 0-1.4.2-1.8.6Z" fill="#fef3c7" />
-      <path d="M22.4 8.6V13H30l-2-3.4a2 2 0 0 0-1.7-1H22.4Z" fill="#fef3c7" />
+      <path d="M15 9.2 13 13h7.4V8.6h-3.6c-.7 0-1.4.2-1.8.6Z" fill="#ffedd5" />
+      <path d="M22.4 8.6V13H30l-2-3.4a2 2 0 0 0-1.7-1H22.4Z" fill="#ffedd5" />
       <circle cx="14.5" cy="17.3" r="2.6" fill="#0f172a" />
       <circle cx="14.5" cy="17.3" r="1" fill="#94a3b8" />
       <circle cx="32.5" cy="17.3" r="2.6" fill="#0f172a" />
       <circle cx="32.5" cy="17.3" r="1" fill="#94a3b8" />
-      <rect x="6.5" y="12.4" width="2.6" height="1.4" rx="0.5" fill="#fde68a" />
+      <rect x="6.5" y="12.4" width="2.6" height="1.4" rx="0.5" fill="#fed7aa" />
     </svg>
   );
 }
@@ -123,7 +123,12 @@ export function RoadJourney() {
   }).join('\n');
 
   return (
-    <div className="relative mt-2 select-none">
+    // overflow-hidden — the car's offset-path animation uses the same raw
+    // 780x190 coordinate units as the SVG path, but (unlike the SVG's own
+    // viewBox scaling) doesn't shrink to match a narrow container, so on
+    // small cards it can travel outside this box; clip it here rather than
+    // let it drift over unrelated content below.
+    <div className="relative mt-2 select-none overflow-hidden">
       <style>{`
         @keyframes drive-along-road {
           0% { offset-distance: 0%; opacity: 0; }
@@ -154,9 +159,9 @@ export function RoadJourney() {
 
       <svg viewBox="0 0 780 190" className="w-full" role="img" aria-label="Animated illustration of a car travelling a route through the driving licence, registration, PUC, challan, and permit services.">
         <path ref={pathRef} d={ROAD_PATH_D} fill="none" stroke="none" />
-        <path d={ROAD_PATH_D} fill="none" stroke="rgba(148,163,184,0.22)" strokeWidth="22" strokeLinecap="round" />
-        <path d={ROAD_PATH_D} fill="none" stroke="rgba(15,23,42,0.55)" strokeWidth="16" strokeLinecap="round" />
-        <path d={ROAD_PATH_D} fill="none" stroke="rgba(245,158,11,0.55)" strokeWidth="1.4" strokeDasharray="10 9" strokeLinecap="round" />
+        <path d={ROAD_PATH_D} fill="none" stroke="rgba(100,116,139,0.2)" strokeWidth="22" strokeLinecap="round" />
+        <path d={ROAD_PATH_D} fill="none" stroke="rgba(30,41,59,0.5)" strokeWidth="16" strokeLinecap="round" />
+        <path d={ROAD_PATH_D} fill="none" stroke="rgba(249,115,22,0.65)" strokeWidth="1.4" strokeDasharray="10 9" strokeLinecap="round" />
       </svg>
 
       {points.map((point, index) => {
@@ -173,10 +178,13 @@ export function RoadJourney() {
               ...({ '--glow-name': `glow-${stop.id}` } as Record<string, string>)
             }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-300/40 bg-slate-950/80 text-amber-200 shadow-lg shadow-black/30">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600 shadow-sm">
               {stop.icon}
             </span>
-            <span className="whitespace-nowrap rounded-full bg-slate-950/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-300">{stop.label}</span>
+            {/* hidden below sm — at narrow widths this whole diagram shrinks but the
+                label pills stay a fixed pixel size, so they overlap each other and
+                the caption text below; icons alone still communicate the route */}
+            <span className="hidden whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600 shadow-sm sm:inline-block">{stop.label}</span>
           </div>
         );
       })}

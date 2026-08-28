@@ -42,6 +42,8 @@ export interface ServiceDefinition {
   officialUrl?: string;
   steps: ServiceStep[];
   requiredDocuments: string[];
+  /** Plain-language duration estimate shown on the journey preview, e.g. "5-8 minutes". Only set for guided services. */
+  estimatedTime?: string;
   /**
    * Tap-to-select choices for specific fields, keyed by field name. When a
    * field has an entry here, the guided flow renders it as chips instead of
@@ -200,14 +202,6 @@ export interface PointsLedger {
   disclaimer: string;
 }
 
-export interface ChallanVerification {
-  caseId: string;
-  status: 'unverified' | 'not_a_challan';
-  message: string;
-  officialUrl: string;
-  disclaimer: string;
-}
-
 export interface ScamSignal {
   signalId: string;
   title: string;
@@ -219,11 +213,6 @@ export interface ComplianceSnapshot {
   pointsLedger: PointsLedger;
   scamSignals: ScamSignal[];
   disclaimer: string;
-}
-
-export interface VoiceTranscription {
-  text: string;
-  language?: string;
 }
 
 export interface AuthSession {

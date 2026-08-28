@@ -1,8 +1,6 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { ChallanVerification, ComplianceSnapshot, PointsLedger, ScamSignal } from '@parivahan/shared';
+import { Inject, Injectable } from '@nestjs/common';
+import type { ComplianceSnapshot, PointsLedger, ScamSignal } from '@parivahan/shared';
 import { CoreDataService } from '../../common/core-data.service.js';
-
-const ECHALLAN_URL = 'https://echallan.parivahan.gov.in/';
 
 @Injectable()
 export class ComplianceService {
@@ -29,20 +27,6 @@ export class ComplianceService {
       activePoints: entries.reduce((total, entry) => total + entry.points, 0),
       entries,
       disclaimer: 'Illustrative safety points, not an official demerit-point record.'
-    };
-  }
-
-  verifyChallan(caseId: string): ChallanVerification {
-    const caseRecord = this.coreData.getCase(caseId);
-    if (caseRecord.type !== 'challan') {
-      return { caseId, status: 'not_a_challan', message: 'This case is not a challan record.', officialUrl: ECHALLAN_URL, disclaimer: 'Demo check only.' };
-    }
-    return {
-      caseId,
-      status: 'unverified',
-      message: `We found a local ${caseRecord.status === 'resolved' ? 'resolved' : 'open'} challan case. Confirm its authenticity and payment status on the official portal before acting.`,
-      officialUrl: ECHALLAN_URL,
-      disclaimer: 'Demo check only. This app does not query government enforcement records.'
     };
   }
 

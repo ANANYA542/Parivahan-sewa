@@ -1,8 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   buildEscalationStageHistoryItem,
+  ESCALATION_NOTE,
   createCaseFromSubmission,
-  getServiceById,
   seedData,
   type CaseDetail,
   type CaseRecord,
@@ -194,6 +194,9 @@ export class CoreDataService {
     }
     if (CLOSED_CASE_STATUSES.has(caseRecord.status)) {
       throw new BadRequestException('This case is already closed and cannot be escalated.');
+    }
+    if (caseRecord.stageHistory.some((entry) => entry.note === ESCALATION_NOTE)) {
+      throw new BadRequestException('This case has already been marked urgent.');
     }
 
     const at = new Date().toISOString();

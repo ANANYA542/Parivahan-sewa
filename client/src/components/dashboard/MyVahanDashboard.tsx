@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { IdentityBundle } from '@parivahan/shared';
+import type { IdentityBundle, VehicleRecord } from '@parivahan/shared';
 import { fadeUp, staggerContainer } from '../../lib/motion';
 
 interface MyVahanDashboardProps {
@@ -10,28 +10,42 @@ function formatLabel(value: string) {
   return value.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase());
 }
 
-export function MyVahanDashboard({ identity }: MyVahanDashboardProps) {
-  const vehicle = identity?.vehicles[0];
-  const cards = vehicle
-    ? Object.entries(vehicle.documentStatus).map(([label, value]) => ({ label: formatLabel(label), value: value ?? 'Not available' }))
-    : [];
+function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
+  const cards = Object.entries(vehicle.documentStatus).map(([label, value]) => ({ label: formatLabel(label), value: value ?? 'Not available' }));
 
   return (
-    <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 md:p-7">
-      <p className="font-mono text-[10px] tracking-[0.16em] text-slate-400">YOUR VEHICLE</p>
-      <h2 className="font-display mt-2 text-3xl text-white">My Vahan</h2>
-      <p className="mt-2 text-sm text-slate-400">
-        {vehicle ? `${vehicle.registrationNumber} · ${vehicle.vehicleType.replace('-', ' ')}` : 'Loading your linked vehicle records...'}
-      </p>
-      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-slate-900">{vehicle.registrationNumber}</p>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize text-slate-600">{vehicle.vehicleType.replace(/-/g, ' ')}</span>
+      </div>
+      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {cards.map((card) => (
-          <motion.div key={card.label} variants={fadeUp} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-            <div className="font-mono text-[10px] tracking-[0.13em] text-slate-400">{card.label}</div>
-            <div className={`mt-2 text-lg font-medium ${card.value === 'expired' ? 'text-rose-300' : 'text-white'}`}>{card.value}</div>
+          <motion.div key={card.label} variants={fadeUp} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="font-mono text-[10px] tracking-[0.13em] text-slate-500">{card.label}</div>
+            <div className={`mt-1 text-sm font-medium ${card.value === 'expired' ? 'text-rose-600' : 'text-slate-900'}`}>{card.value}</div>
           </motion.div>
         ))}
-        {identity && !vehicle ? <p className="text-sm text-slate-400">No linked vehicles found.</p> : null}
       </motion.div>
+    </div>
+  );
+}
+
+export function MyVahanDashboard({ identity }: MyVahanDashboardProps) {
+  const vehicles = identity?.vehicles ?? [];
+
+  return (
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-7">
+      <p className="font-mono text-[10px] tracking-[0.16em] text-slate-500">YOUR VEHICLES</p>
+      <h2 className="font-display mt-2 text-3xl text-slate-900">My Vahan</h2>
+      <p className="mt-2 text-sm text-slate-500">
+        {vehicles.length ? `${vehicles.length} linked vehicle${vehicles.length === 1 ? '' : 's'}` : identity ? 'No linked vehicles found.' : 'Loading your linked vehicle records...'}
+      </p>
+      {vehicles.length ? (
+        <div className="mt-6 space-y-4">
+          {vehicles.map((vehicle) => <VehicleCard key={vehicle.vehicleId} vehicle={vehicle} />)}
+        </div>
+      ) : null}
     </section>
   );
 }

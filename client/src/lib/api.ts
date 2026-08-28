@@ -27,10 +27,31 @@ export class ApiRequestError extends Error {
 }
 
 let authToken: string | null = null;
+let onUnauthorized: (() => void) | null = null;
 
 /** Called once on load (from a saved session) and on every login/logout. */
 export function setAuthToken(token: string | null): void {
   authToken = token;
+}
+
+/**
+ * Registered once by App.tsx. A JWT is only valid for 12h (see server-side
+ * AuthService) — without this, an expired/invalid token left the citizen
+ * looking "still signed in" while every request silently 401'd, with no
+ * path back to the login screen except manually finding "Sign out". This
+ * fires at most the session-clearing logic once per 401, from wherever it
+ * happens to be raised.
+ */
+export function setOnUnauthorized(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
+
+function extractErrorMessage(payload: unknown, fallback: string): string {
+  return typeof payload === 'object' && payload !== null && 'message' in payload
+    ? Array.isArray((payload as { message: unknown }).message)
+      ? (payload as { message: string[] }).message.join(', ')
+      : String((payload as { message: unknown }).message)
+    : fallback;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -47,12 +68,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);
-    const message =
-      typeof payload === 'object' && payload !== null && 'message' in payload
-        ? Array.isArray((payload as { message: unknown }).message)
-          ? (payload as { message: string[] }).message.join(', ')
-          : String((payload as { message: unknown }).message)
-        : 'The service could not complete this request.';
+    const message = extractErrorMessage(payload, 'The service could not complete this request.');
+    if (response.status === 401 && authToken) onUnauthorized?.();
     throw new ApiRequestError(message, response.status);
   }
 
@@ -73,8 +90,8 @@ async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
 
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);
-    const message =
-      typeof payload === 'object' && payload !== null && 'message' in payload ? String((payload as { message: unknown }).message) : 'The document could not be generated.';
+    const message = extractErrorMessage(payload, 'The document could not be generated.');
+    if (response.status === 401 && authToken) onUnauthorized?.();
     throw new ApiRequestError(message, response.status);
   }
 
@@ -150,13 +167,6 @@ export function askStandingAgent(userId: string, message: string, history: Agent
 
 export function getComplianceSnapshot(userId: string) {
   return request<ComplianceSnapshot>(`/users/${encodeURIComponent(userId)}/compliance`);
-}
-
-export function transcribeVoice(audioBase64: string, mimeType: string, language?: string) {
-  return request<{ text: string; language?: string }>('/voice/transcribe', {
-    method: 'POST',
-    body: JSON.stringify({ audioBase64, mimeType, ...(language ? { language } : {}) })
-  });
 }
 
 export function escalateCase(caseId: string) {

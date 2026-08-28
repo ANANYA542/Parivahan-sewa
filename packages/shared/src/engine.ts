@@ -45,6 +45,52 @@ function officialService(
   };
 }
 
+const CATEGORY_DEFAULT_DOCUMENTS: Record<string, string[]> = {
+  'driving-licence': ['Existing licence or learner licence, if any', 'Identity proof'],
+  'vehicle-registration': ['Registration Certificate', 'Identity proof'],
+  'permit-and-tax': ['Registration Certificate', 'Proof of payment, if applicable'],
+  'business-and-manufacturer': ['Business registration documents', 'Identity proof'],
+  'digital-services': ['Registration Certificate']
+};
+
+/**
+ * A generic, honest guided intake for real government processes this
+ * prototype hasn't modelled bespoke fields for — same preview -> guided
+ * form -> submit -> tracked case -> downloadable-copy pipeline as the four
+ * flagship services, just without service-specific field vocabulary. The
+ * official URL is kept as a companion reference (surfaced in the journey
+ * preview and the official-portal step patterns elsewhere), not replaced —
+ * this in-app copy is framed the same way the accident-report PDF already
+ * is: a citizen's own record, not an official government submission.
+ */
+function guidedApplicationService(
+  serviceId: string,
+  name: string,
+  category: string,
+  description: string,
+  officialUrl: string,
+  options: { requiresVehicle?: boolean; requiredDocuments?: string[] } = {}
+): ServiceDefinition {
+  const vehicleStep = options.requiresVehicle ? [{ id: 'vehicle', title: 'Select vehicle', fields: ['vehicleId'] }] : [];
+  return {
+    serviceId,
+    name,
+    category,
+    description,
+    delivery: 'guided',
+    officialUrl,
+    steps: [
+      { id: 'preview', title: 'Preview journey', fields: [] },
+      ...vehicleStep,
+      { id: 'details', title: 'Provide request details', fields: ['requestDetails'] },
+      { id: 'attachments', title: 'Attach supporting documents', fields: ['attachments'] },
+      { id: 'confirm', title: 'Confirm and submit', fields: ['acknowledgement'] }
+    ],
+    requiredDocuments: options.requiredDocuments ?? CATEGORY_DEFAULT_DOCUMENTS[category] ?? ['Identity proof'],
+    estimatedTime: '5-10 minutes'
+  };
+}
+
 export const serviceCatalog: ServiceDefinition[] = [
   {
     serviceId: 'svc-renew-puc',
@@ -59,7 +105,8 @@ export const serviceCatalog: ServiceDefinition[] = [
       { id: 'test-center', title: 'Choose test center', fields: ['testCenter'] },
       { id: 'confirm', title: 'Confirm and submit', fields: ['acknowledgement'] }
     ],
-    requiredDocuments: ['Registration Certificate', 'Existing PUC']
+    requiredDocuments: ['Registration Certificate', 'Existing PUC'],
+    estimatedTime: '5-8 minutes'
   },
   {
     serviceId: 'svc-challan-dispute',
@@ -71,11 +118,15 @@ export const serviceCatalog: ServiceDefinition[] = [
     steps: [
       { id: 'preview', title: 'Review dispute summary', fields: [] },
       { id: 'challan', title: 'Enter challan details', fields: ['challanNumber', 'licenceNumber'] },
-      { id: 'reason', title: 'Explain the dispute', fields: ['reason'] },
+      { id: 'reason', title: 'Explain the dispute', fields: ['issueType', 'reason'] },
       { id: 'evidence', title: 'Attach evidence', fields: ['attachments'] },
       { id: 'confirm', title: 'Submit dispute', fields: ['declaration'] }
     ],
-    requiredDocuments: ['Challan Notice', 'Evidence Files']
+    requiredDocuments: ['Challan Notice', 'Evidence Files'],
+    estimatedTime: '8-12 minutes',
+    fieldOptions: {
+      issueType: ['Incorrect vehicle number', 'Wrong violation recorded', 'Vehicle not at that location/time', 'Already paid', 'Other']
+    }
   },
   {
     // Field vocabulary (area type, weather, collision type, hit & run,
@@ -98,6 +149,7 @@ export const serviceCatalog: ServiceDefinition[] = [
       { id: 'confirm', title: 'Submit report', fields: ['declaration'] }
     ],
     requiredDocuments: ['Incident details'],
+    estimatedTime: '6-10 minutes',
     fieldOptions: {
       areaType: ['Urban', 'Rural'],
       weather: ['Sunny / clear', 'Rainy', 'Foggy / misty', 'Other'],
@@ -119,42 +171,43 @@ export const serviceCatalog: ServiceDefinition[] = [
       { id: 'confirm', title: 'Submit grievance', fields: ['declaration'] }
     ],
     requiredDocuments: ['Supporting evidence, if available'],
+    estimatedTime: '5-8 minutes',
     fieldOptions: {
       category: ['Service delay', 'Incorrect fee or challan', 'Staff conduct', 'Document or records error', 'Other']
     }
   },
-  officialService('svc-learner-licence', 'Learner Licence', 'driving-licence', 'Apply for a learner licence through Sarathi.', SARATHI_SERVICE_URL),
-  officialService('svc-driving-licence', 'Driving Licence', 'driving-licence', 'Apply for a new driving licence through Sarathi.', SARATHI_SERVICE_URL),
-  officialService('svc-dl-online-test-appointment', 'DL Online Test and Appointment', 'driving-licence', 'Book or modify learner and driving licence test appointments.', SARATHI_SERVICE_URL),
-  officialService('svc-application-status', 'Application Status', 'driving-licence', 'Check the status of a driving licence or learner licence application.', SARATHI_SERVICE_URL),
-  officialService('svc-dl-renewal', 'Driving Licence Renewal', 'driving-licence', 'Renew an existing driving licence.', SARATHI_SERVICE_URL),
-  officialService('svc-dl-duplicate', 'Duplicate Driving Licence', 'driving-licence', 'Apply for a duplicate driving licence.', SARATHI_SERVICE_URL),
-  officialService('svc-dl-add-class', 'Addition of Vehicle Class to DL', 'driving-licence', 'Add an eligible class of vehicle to a driving licence.', SARATHI_SERVICE_URL),
-  officialService('svc-dl-change-address', 'Change or Correction of DL Address', 'driving-licence', 'Update the address recorded on a driving licence.', SARATHI_SERVICE_URL),
-  officialService('svc-dl-change-name', 'Change or Correction of DL Name', 'driving-licence', 'Request a name correction on a driving licence.', SARATHI_SERVICE_URL),
-  officialService('svc-driving-school', 'Driving School Licence', 'driving-licence', 'Apply for and manage driving school licensing services.', SARATHI_SERVICE_URL),
-  officialService('svc-vehicle-registration', 'Vehicle Registration', 'vehicle-registration', 'Access registration and registered-vehicle citizen services.', VAHAN_SERVICE_URL),
-  officialService('svc-vehicle-noc', 'No Objection Certificate', 'vehicle-registration', 'Apply online for a vehicle no objection certificate.', VAHAN_SERVICE_URL),
-  officialService('svc-hypothecation', 'Hypothecation Services', 'vehicle-registration', 'Manage hypothecation entry, continuation, and termination services.', VAHAN_SERVICE_URL),
-  officialService('svc-rc-renewal', 'Renewal of Registration', 'vehicle-registration', 'Renew a vehicle registration certificate.', VAHAN_SERVICE_URL),
-  officialService('svc-duplicate-rc', 'Duplicate RC', 'vehicle-registration', 'Apply for a duplicate registration certificate.', VAHAN_SERVICE_URL),
-  officialService('svc-transfer-ownership', 'Transfer of Ownership', 'vehicle-registration', 'Apply to transfer vehicle ownership.', VAHAN_SERVICE_URL),
-  officialService('svc-change-vehicle-address', 'Change of Vehicle Address', 'vehicle-registration', 'Update the address recorded on a vehicle registration.', VAHAN_SERVICE_URL),
-  officialService('svc-vehicle-conversion', 'Conversion of Vehicle', 'vehicle-registration', 'Apply to change the vehicle type or class.', VAHAN_SERVICE_URL),
-  officialService('svc-rc-cancellation', 'RC Cancellation', 'vehicle-registration', 'Apply to cancel a vehicle registration certificate.', VAHAN_SERVICE_URL),
-  officialService('svc-fancy-number', 'Online Fancy Number', 'vehicle-registration', 'Bid for and purchase a choice registration number.', OTHER_SERVICES_URL),
-  officialService('svc-national-permit', 'National Permit', 'permit-and-tax', 'Apply for a national permit, check status, and print receipts.', OTHER_SERVICES_URL),
-  officialService('svc-aitp-authorization', 'AITP Authorization', 'permit-and-tax', 'Manage all-India tourist permit authorization.', VAHAN_SERVICE_URL),
-  officialService('svc-fitness', 'Fitness', 'permit-and-tax', 'Book a fitness test appointment and make related payments.', OTHER_SERVICES_URL),
-  officialService('svc-tax-and-fee', 'Tax and Fee', 'permit-and-tax', 'Access vehicle tax and fee payment services.', OTHER_SERVICES_URL),
-  officialService('svc-online-checkpost-tax', 'Online CheckPost Tax', 'permit-and-tax', 'Use the common platform for checkpost tax services.', OTHER_SERVICES_URL),
-  officialService('svc-dealer-registration', 'Dealer Registration', 'business-and-manufacturer', 'Register dealers and access vehicle-registration enquiries.', OTHER_SERVICES_URL),
-  officialService('svc-trade-certificate', 'Trade Certificate', 'business-and-manufacturer', 'Apply for dealer trade certificate services and payments.', OTHER_SERVICES_URL),
-  officialService('svc-vltd', 'Vehicle Location Tracking Device', 'business-and-manufacturer', 'Access VLTD maker and tracking ecosystem services.', OTHER_SERVICES_URL),
-  officialService('svc-speed-limiting-device', 'Speed Limiting Device', 'business-and-manufacturer', 'Manage speed limiting device inventory and tracking.', OTHER_SERVICES_URL),
-  officialService('svc-cng-maker', 'CNG Maker', 'business-and-manufacturer', 'Access CNG kit manufacturer services.', PARIVAHAN_HOME_URL),
-  officialService('svc-homologation', 'Homologation', 'business-and-manufacturer', 'Manage manufacturer vehicle approval lifecycle services.', OTHER_SERVICES_URL),
-  officialService('svc-vahan-green-sewa', 'Vahan Green Sewa', 'digital-services', 'Manage CNG and related green-device fitment processes.', OTHER_SERVICES_URL),
+  guidedApplicationService('svc-learner-licence', 'Learner Licence', 'driving-licence', 'Apply for a learner licence through Sarathi.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-driving-licence', 'Driving Licence', 'driving-licence', 'Apply for a new driving licence through Sarathi.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-dl-online-test-appointment', 'DL Online Test and Appointment', 'driving-licence', 'Book or modify learner and driving licence test appointments.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-application-status', 'Application Status', 'driving-licence', 'Check the status of a driving licence or learner licence application.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-dl-renewal', 'Driving Licence Renewal', 'driving-licence', 'Renew an existing driving licence.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-dl-duplicate', 'Duplicate Driving Licence', 'driving-licence', 'Apply for a duplicate driving licence.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-dl-add-class', 'Addition of Vehicle Class to DL', 'driving-licence', 'Add an eligible class of vehicle to a driving licence.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-dl-change-address', 'Change or Correction of DL Address', 'driving-licence', 'Update the address recorded on a driving licence.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-dl-change-name', 'Change or Correction of DL Name', 'driving-licence', 'Request a name correction on a driving licence.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-driving-school', 'Driving School Licence', 'driving-licence', 'Apply for and manage driving school licensing services.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-vehicle-registration', 'Vehicle Registration', 'vehicle-registration', 'Access registration and registered-vehicle citizen services.', VAHAN_SERVICE_URL),
+  guidedApplicationService('svc-vehicle-noc', 'No Objection Certificate', 'vehicle-registration', 'Apply online for a vehicle no objection certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-hypothecation', 'Hypothecation Services', 'vehicle-registration', 'Manage hypothecation entry, continuation, and termination services.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-rc-renewal', 'Renewal of Registration', 'vehicle-registration', 'Renew a vehicle registration certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-duplicate-rc', 'Duplicate RC', 'vehicle-registration', 'Apply for a duplicate registration certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-transfer-ownership', 'Transfer of Ownership', 'vehicle-registration', 'Apply to transfer vehicle ownership.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-change-vehicle-address', 'Change of Vehicle Address', 'vehicle-registration', 'Update the address recorded on a vehicle registration.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-vehicle-conversion', 'Conversion of Vehicle', 'vehicle-registration', 'Apply to change the vehicle type or class.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-rc-cancellation', 'RC Cancellation', 'vehicle-registration', 'Apply to cancel a vehicle registration certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-fancy-number', 'Online Fancy Number', 'vehicle-registration', 'Bid for and purchase a choice registration number.', OTHER_SERVICES_URL),
+  guidedApplicationService('svc-national-permit', 'National Permit', 'permit-and-tax', 'Apply for a national permit, check status, and print receipts.', OTHER_SERVICES_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-aitp-authorization', 'AITP Authorization', 'permit-and-tax', 'Manage all-India tourist permit authorization.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-fitness', 'Fitness', 'permit-and-tax', 'Book a fitness test appointment and make related payments.', OTHER_SERVICES_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-tax-and-fee', 'Tax and Fee', 'permit-and-tax', 'Access vehicle tax and fee payment services.', OTHER_SERVICES_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-online-checkpost-tax', 'Online CheckPost Tax', 'permit-and-tax', 'Use the common platform for checkpost tax services.', OTHER_SERVICES_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-dealer-registration', 'Dealer Registration', 'business-and-manufacturer', 'Register dealers and access vehicle-registration enquiries.', OTHER_SERVICES_URL),
+  guidedApplicationService('svc-trade-certificate', 'Trade Certificate', 'business-and-manufacturer', 'Apply for dealer trade certificate services and payments.', OTHER_SERVICES_URL),
+  guidedApplicationService('svc-vltd', 'Vehicle Location Tracking Device', 'business-and-manufacturer', 'Access VLTD maker and tracking ecosystem services.', OTHER_SERVICES_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-speed-limiting-device', 'Speed Limiting Device', 'business-and-manufacturer', 'Manage speed limiting device inventory and tracking.', OTHER_SERVICES_URL, { requiresVehicle: true }),
+  guidedApplicationService('svc-cng-maker', 'CNG Maker', 'business-and-manufacturer', 'Access CNG kit manufacturer services.', PARIVAHAN_HOME_URL),
+  guidedApplicationService('svc-homologation', 'Homologation', 'business-and-manufacturer', 'Manage manufacturer vehicle approval lifecycle services.', OTHER_SERVICES_URL),
+  guidedApplicationService('svc-vahan-green-sewa', 'Vahan Green Sewa', 'digital-services', 'Manage CNG and related green-device fitment processes.', OTHER_SERVICES_URL, { requiresVehicle: true }),
   officialService('svc-mparivahan', 'mParivahan', 'digital-services', 'Access virtual document wallet and mobility information services.', PARIVAHAN_HOME_URL),
   officialService('svc-echallan', 'eChallan', 'digital-services', 'Check and manage traffic enforcement challans.', ECHALLAN_URL),
   officialService('svc-license-registration-details', 'Licence and Registration Details', 'information', 'Look up basic licence and vehicle registration details.', PARIVAHAN_HOME_URL),
@@ -428,43 +481,150 @@ export function getIdentityBundle(userId: string): IdentityBundle {
   return { user, vehicles, cases };
 }
 
+const INTENT_KEYWORD_MATCHES = [
+  { serviceId: 'svc-renew-puc', terms: ['puc', 'pollution certificate'] },
+  { serviceId: 'svc-challan-dispute', terms: ['challan dispute', 'dispute fine', 'dispute a challan', 'contest challan', 'fight a challan'] },
+  { serviceId: 'svc-echallan', terms: ['challan', 'traffic fine', 'traffic ticket'] },
+  { serviceId: 'svc-accident-report', terms: ['accident', 'incident', 'crash'] },
+  { serviceId: 'svc-grievance-report', terms: ['grievance', 'complaint', 'service issue'] },
+  { serviceId: 'svc-learner-licence', terms: ['learner licence', 'learner license', 'll application', 'learners permit'] },
+  { serviceId: 'svc-driving-licence', terms: ['new driving licence', 'new driving license', 'driving licence application', 'apply for a licence', 'apply for a license', 'apply for driving licence', 'get a driving licence', 'get a license'] },
+  { serviceId: 'svc-dl-renewal', terms: ['renew driving licence', 'renew driving license', 'dl renewal', 'licence renewal', 'license renewal', 'renew my licence', 'renew my license'] },
+  { serviceId: 'svc-dl-duplicate', terms: ['duplicate driving licence', 'duplicate driving license', 'lost licence', 'lost license', 'lost my licence', 'lost my license'] },
+  { serviceId: 'svc-dl-add-class', terms: ['add vehicle class', 'add a class to my licence', 'add class to license'] },
+  { serviceId: 'svc-dl-change-address', terms: ['change address on licence', 'change address on license', 'update licence address'] },
+  { serviceId: 'svc-dl-change-name', terms: ['change name on licence', 'change name on license', 'correct my name on licence'] },
+  { serviceId: 'svc-driving-school', terms: ['driving school licence', 'driving school license'] },
+  { serviceId: 'svc-dl-online-test-appointment', terms: ['driving test appointment', 'learner test appointment', 'online test', 'book a driving test'] },
+  { serviceId: 'svc-application-status', terms: ['check my application status', 'application status', 'check my licence status'] },
+  { serviceId: 'svc-transfer-ownership', terms: ['transfer ownership', 'sell my car', 'sold my vehicle', 'transfer my vehicle'] },
+  { serviceId: 'svc-duplicate-rc', terms: ['duplicate rc', 'lost rc', 'registration certificate duplicate', 'lost my registration certificate'] },
+  { serviceId: 'svc-rc-renewal', terms: ['renew registration', 'renew rc', 'renew my registration'] },
+  { serviceId: 'svc-vehicle-noc', terms: ['vehicle noc', 'no objection certificate'] },
+  { serviceId: 'svc-hypothecation', terms: ['hypothecation', 'car loan removal', 'remove hypothecation'] },
+  { serviceId: 'svc-change-vehicle-address', terms: ['change vehicle address', 'rc address change', 'update vehicle address'] },
+  { serviceId: 'svc-vehicle-conversion', terms: ['convert my vehicle', 'change vehicle type', 'vehicle conversion'] },
+  { serviceId: 'svc-rc-cancellation', terms: ['cancel my registration', 'rc cancellation', 'cancel rc'] },
+  { serviceId: 'svc-fancy-number', terms: ['fancy number', 'choice number', 'vip number'] },
+  { serviceId: 'svc-national-permit', terms: ['national permit', 'vehicle permit'] },
+  { serviceId: 'svc-aitp-authorization', terms: ['tourist permit', 'aitp'] },
+  { serviceId: 'svc-fitness', terms: ['fitness certificate', 'fitness test'] },
+  { serviceId: 'svc-tax-and-fee', terms: ['road tax', 'vehicle tax', 'vehicle fee', 'pay my tax'] },
+  { serviceId: 'svc-online-checkpost-tax', terms: ['checkpost tax'] },
+  { serviceId: 'svc-dealer-registration', terms: ['dealer registration', 'register as a dealer'] },
+  { serviceId: 'svc-trade-certificate', terms: ['trade certificate'] },
+  { serviceId: 'svc-vltd', terms: ['vehicle tracking device', 'vltd'] },
+  { serviceId: 'svc-speed-limiting-device', terms: ['speed limiting device', 'speed governor'] },
+  { serviceId: 'svc-cng-maker', terms: ['cng kit', 'cng maker'] },
+  { serviceId: 'svc-homologation', terms: ['homologation'] },
+  { serviceId: 'svc-vahan-green-sewa', terms: ['green sewa', 'cng fitment'] }
+];
+
+const STOPWORDS = new Set(['a', 'an', 'the', 'my', 'i', 'to', 'for', 'of', 'and', 'or', 'on', 'in', 'is', 'me', 'please', 'want', 'need']);
+
+/**
+ * Short domain abbreviations (RC, DL, PUC, ...) are exactly the words the
+ * significant-word filter throws out for being too short to be reliably
+ * meaningful on their own — so "I lost my rc" tokenized to just ['lost']
+ * and matched nothing. Expanding them to their full phrase first lets them
+ * flow through matching normally instead of needing a special case.
+ */
+const ABBREVIATION_EXPANSIONS: Record<string, string> = {
+  rc: 'registration certificate',
+  dl: 'driving licence',
+  ll: 'learner licence',
+  puc: 'pollution under control certificate',
+  noc: 'no objection certificate',
+  vltd: 'vehicle location tracking device'
+};
+
+function expandAbbreviations(text: string): string {
+  return text.replace(/\b[a-z]{2,4}\b/g, (word) => ABBREVIATION_EXPANSIONS[word] ?? word);
+}
+
+function significantWords(text: string): string[] {
+  return expandAbbreviations(text.toLowerCase())
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !STOPWORDS.has(word));
+}
+
+/**
+ * Falls back to matching the query's significant words against each guided
+ * service's own name/description when nothing in the curated keyword list
+ * hits — otherwise a phrase like "apply for a licence" that isn't an exact
+ * fixture of the keyword list would clarification-need out even though a
+ * guided journey for it plainly exists in the catalog.
+ */
+/**
+ * Classic edit distance — used so a misspelling like "liscence" still counts
+ * as the word "licence" instead of matching nothing at all. A fixed list of
+ * known typos doesn't scale to the ones nobody thought to add; comparing by
+ * distance does, at the cost of nothing more than a small DP table per
+ * word pair (these are short domain words, never long strings).
+ */
+function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const previousRow = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let i = 0; i < a.length; i++) {
+    let previousDiagonal = previousRow[0]!;
+    previousRow[0] = i + 1;
+    for (let j = 0; j < b.length; j++) {
+      const temp = previousRow[j + 1]!;
+      previousRow[j + 1] = a[i] === b[j] ? previousDiagonal : 1 + Math.min(previousDiagonal, previousRow[j]!, previousRow[j + 1]!);
+      previousDiagonal = temp;
+    }
+  }
+  return previousRow[b.length]!;
+}
+
+/** How many typo'd characters still count as "the same word," scaled so short words (more sensitive to any change) stay strict. */
+function maxAllowedTypoDistance(wordLength: number): number {
+  if (wordLength >= 8) return 2;
+  if (wordLength >= 4) return 1;
+  return 0;
+}
+
+function wordsMatch(queryWord: string, candidateWord: string): boolean {
+  if (queryWord === candidateWord) return true;
+  const allowed = Math.min(maxAllowedTypoDistance(queryWord.length), maxAllowedTypoDistance(candidateWord.length));
+  return allowed > 0 && levenshteinDistance(queryWord, candidateWord) <= allowed;
+}
+
+function fuzzyServiceMatch(normalizedQuery: string): ServiceDefinition | undefined {
+  const queryWords = significantWords(normalizedQuery);
+  if (queryWords.length === 0) return undefined;
+
+  let best: { service: ServiceDefinition; overlap: number } | undefined;
+  for (const service of seedData.services) {
+    if (service.delivery !== 'guided') continue;
+    const candidateWords = significantWords(`${service.name} ${service.description}`);
+    const overlap = candidateWords.filter((candidateWord) => queryWords.some((queryWord) => wordsMatch(queryWord, candidateWord))).length;
+    if (overlap > 0 && (!best || overlap > best.overlap)) {
+      best = { service, overlap };
+    }
+  }
+  // Require at least two shared significant words so a single generic word
+  // (e.g. "vehicle") doesn't confidently misroute an unrelated query.
+  return best && best.overlap >= 2 ? best.service : undefined;
+}
+
 export function resolveIntent(query: string): IntentResolution {
   const normalized = query.toLowerCase();
-  const matches = [
-    { serviceId: 'svc-renew-puc', terms: ['puc', 'pollution certificate'] },
-    { serviceId: 'svc-challan-dispute', terms: ['challan dispute', 'dispute fine', 'contest challan'] },
-    { serviceId: 'svc-echallan', terms: ['challan', 'traffic fine', 'traffic ticket'] },
-    { serviceId: 'svc-accident-report', terms: ['accident', 'incident', 'crash'] },
-    { serviceId: 'svc-grievance-report', terms: ['grievance', 'complaint', 'service issue'] },
-    { serviceId: 'svc-learner-licence', terms: ['learner licence', 'learner license', 'll application'] },
-    { serviceId: 'svc-driving-licence', terms: ['new driving licence', 'new driving license', 'driving licence application'] },
-    { serviceId: 'svc-dl-renewal', terms: ['renew driving licence', 'renew driving license', 'dl renewal'] },
-    { serviceId: 'svc-dl-duplicate', terms: ['duplicate driving licence', 'duplicate driving license', 'lost licence', 'lost license'] },
-    { serviceId: 'svc-dl-online-test-appointment', terms: ['driving test appointment', 'learner test appointment', 'online test'] },
-    { serviceId: 'svc-transfer-ownership', terms: ['transfer ownership', 'sell my car', 'sold my vehicle'] },
-    { serviceId: 'svc-duplicate-rc', terms: ['duplicate rc', 'lost rc', 'registration certificate duplicate'] },
-    { serviceId: 'svc-rc-renewal', terms: ['renew registration', 'renew rc'] },
-    { serviceId: 'svc-vehicle-noc', terms: ['vehicle noc', 'no objection certificate'] },
-    { serviceId: 'svc-hypothecation', terms: ['hypothecation', 'car loan removal'] },
-    { serviceId: 'svc-change-vehicle-address', terms: ['change vehicle address', 'rc address change'] },
-    { serviceId: 'svc-fancy-number', terms: ['fancy number', 'choice number'] },
-    { serviceId: 'svc-national-permit', terms: ['national permit', 'vehicle permit'] },
-    { serviceId: 'svc-fitness', terms: ['fitness certificate', 'fitness test'] },
-    { serviceId: 'svc-tax-and-fee', terms: ['road tax', 'vehicle tax', 'vehicle fee'] }
-  ];
+  const matchedService = INTENT_KEYWORD_MATCHES.find((item) => item.terms.some((term) => normalized.includes(term)));
+  const service = matchedService ? getServiceById(matchedService.serviceId) : fuzzyServiceMatch(normalized);
 
-  const matchedService = matches.find((item) => item.terms.some((term) => normalized.includes(term)));
-  if (matchedService) {
-    const service = getServiceById(matchedService.serviceId);
-    if (service) {
-      return {
-        query,
-        serviceId: service.serviceId,
-        serviceName: service.name,
-        confidence: 'high',
-        clarificationNeeded: false
-      };
-    }
+  if (service) {
+    return {
+      query,
+      serviceId: service.serviceId,
+      serviceName: service.name,
+      confidence: matchedService ? 'high' : 'medium',
+      clarificationNeeded: false
+    };
   }
 
   return {
@@ -597,7 +757,6 @@ export function buildComplianceAlerts(bundle: IdentityBundle): ComplianceAlert[]
 }
 
 export function buildMobilityNudges(
-  bundle: IdentityBundle,
   score: MobilityScoreResult,
   alerts: ComplianceAlert[]
 ): MobilityNudge[] {
@@ -745,11 +904,13 @@ export function buildSlaReminders(bundle: IdentityBundle, now: Date = new Date()
   return reminders;
 }
 
+export const ESCALATION_NOTE = 'Escalated by citizen — flagged for priority review.';
+
 export function buildEscalationStageHistoryItem(currentStage: string, at: string): StageHistoryItem {
   return {
     stage: currentStage,
     at,
-    note: 'Escalated by citizen — flagged for priority review.'
+    note: ESCALATION_NOTE
   };
 }
 
