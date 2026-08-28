@@ -73,10 +73,20 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 // Intercept responses for unified error handling & 401 auto logout
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If response is HTML (happens when SPA routing rewrites 404s/APIs to index.html)
+    const contentType = String(response.headers['content-type'] ?? '');
+    if (
+      (typeof response.data === 'string' && (response.data.startsWith('<!doctype') || response.data.startsWith('<!DOCTYPE') || response.data.startsWith('<html'))) ||
+      (contentType.includes('text/html') && response.config.responseType !== 'blob')
+    ) {
+      throw new ApiRequestError('Unable to reach the backend API. Please verify that your backend is deployed and VITE_API_URL is configured in Vercel.');
+    }
+    return response;
+  },
   (error: AxiosError) => {
     if (!error.response) {
-      throw new ApiRequestError('Unable to reach the service. Check that the server is running.');
+      throw new ApiRequestError('Unable to reach the service. Check that the server is running and CORS is enabled.');
     }
 
     const status = error.response.status;
@@ -117,7 +127,12 @@ export async function signup(input: { name: string; contact: string; preferredLa
 
 /** Demo-only "sign in as" directory — every identity here is synthetic seed data. */
 export async function getDemoUsers(): Promise<UserProfile[]> {
-  return request<UserProfile[]>('/auth/demo-users');
+  try {
+    const data = await request<UserProfile[]>('/auth/demo-users');
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getIdentity(userId: string): Promise<IdentityBundle> {
@@ -143,7 +158,12 @@ export async function getWorkflow(serviceId: string): Promise<ServiceDefinition>
 }
 
 export async function getServices(): Promise<ServiceDefinition[]> {
-  return request<ServiceDefinition[]>('/services');
+  try {
+    const data = await request<ServiceDefinition[]>('/services');
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getMobilityIntelligence(userId: string): Promise<MobilityIntelligenceSnapshot> {
@@ -209,7 +229,12 @@ export async function downloadCaseAcknowledgement(caseId: string): Promise<void>
 }
 
 export async function getNotifications(userId: string): Promise<AppNotification[]> {
-  return request<AppNotification[]>(`/users/${encodeURIComponent(userId)}/notifications`);
+  try {
+    const data = await request<AppNotification[]>(`/users/${encodeURIComponent(userId)}/notifications`);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function markNotificationRead(userId: string, notificationId: string): Promise<AppNotification[]> {

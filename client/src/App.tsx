@@ -131,7 +131,7 @@ export default function App() {
 
     void getServices()
       .then((catalog) => {
-        if (isCurrent) setServices(catalog);
+        if (isCurrent) setServices(Array.isArray(catalog) ? catalog : []);
       })
       .catch((reason) => {
         if (isCurrent) setLoadError(reason instanceof Error ? reason.message : 'Unable to load the service directory.');

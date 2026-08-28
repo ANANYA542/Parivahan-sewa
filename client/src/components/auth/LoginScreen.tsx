@@ -357,7 +357,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
           </motion.div>
         ) : null}
 
-        {demoUsers.length ? (
+        {Array.isArray(demoUsers) && demoUsers.length > 0 ? (
           <motion.div variants={fadeUp} className="mt-8 border-t border-slate-200 pt-6">
             <div className="flex items-center justify-between">
               <p className="text-xs uppercase tracking-wider text-slate-500">Demo accounts (synthetic seed data)</p>
