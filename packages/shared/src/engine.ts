@@ -69,7 +69,7 @@ function guidedApplicationService(
   category: string,
   description: string,
   officialUrl: string,
-  options: { requiresVehicle?: boolean; requiredDocuments?: string[] } = {}
+  options: { requiresVehicle?: boolean; requiredDocuments?: string[]; officialForm?: ServiceDefinition['officialForm'] } = {}
 ): ServiceDefinition {
   const vehicleStep = options.requiresVehicle ? [{ id: 'vehicle', title: 'Select vehicle', fields: ['vehicleId'] }] : [];
   return {
@@ -87,9 +87,13 @@ function guidedApplicationService(
       { id: 'confirm', title: 'Confirm and submit', fields: ['acknowledgement'] }
     ],
     requiredDocuments: options.requiredDocuments ?? CATEGORY_DEFAULT_DOCUMENTS[category] ?? ['Identity proof'],
-    estimatedTime: '5-10 minutes'
+    estimatedTime: '5-10 minutes',
+    ...(options.officialForm ? { officialForm: options.officialForm } : {})
   };
 }
+
+/** The real, manually-verified Form 2 covers seven distinct licence services via its own tick-box list — see forms-metadata.ts. */
+const FORM_2: ServiceDefinition['officialForm'] = { formNumber: 'Form 2', title: "Application for Learner's/Driving Licence, Renewal, Duplicate, or Change of Address/Name", path: '/forms/FORM-2.pdf' };
 
 export const serviceCatalog: ServiceDefinition[] = [
   {
@@ -106,7 +110,8 @@ export const serviceCatalog: ServiceDefinition[] = [
       { id: 'confirm', title: 'Confirm and submit', fields: ['acknowledgement'] }
     ],
     requiredDocuments: ['Registration Certificate', 'Existing PUC'],
-    estimatedTime: '5-8 minutes'
+    estimatedTime: '5-8 minutes',
+    officialForm: { formNumber: 'Form 59', title: 'Pollution Under Control Certificate (reference format — issued after testing, not a form you fill in)', path: '/forms/FORM-59.pdf' }
   },
   {
     serviceId: 'svc-challan-dispute',
@@ -176,16 +181,16 @@ export const serviceCatalog: ServiceDefinition[] = [
       category: ['Service delay', 'Incorrect fee or challan', 'Staff conduct', 'Document or records error', 'Other']
     }
   },
-  guidedApplicationService('svc-learner-licence', 'Learner Licence', 'driving-licence', 'Apply for a learner licence through Sarathi.', SARATHI_SERVICE_URL),
-  guidedApplicationService('svc-driving-licence', 'Driving Licence', 'driving-licence', 'Apply for a new driving licence through Sarathi.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-learner-licence', 'Learner Licence', 'driving-licence', 'Apply for a learner licence through Sarathi.', SARATHI_SERVICE_URL, { officialForm: FORM_2 }),
+  guidedApplicationService('svc-driving-licence', 'Driving Licence', 'driving-licence', 'Apply for a new driving licence through Sarathi.', SARATHI_SERVICE_URL, { officialForm: FORM_2 }),
   guidedApplicationService('svc-dl-online-test-appointment', 'DL Online Test and Appointment', 'driving-licence', 'Book or modify learner and driving licence test appointments.', SARATHI_SERVICE_URL),
   guidedApplicationService('svc-application-status', 'Application Status', 'driving-licence', 'Check the status of a driving licence or learner licence application.', SARATHI_SERVICE_URL),
-  guidedApplicationService('svc-dl-renewal', 'Driving Licence Renewal', 'driving-licence', 'Renew an existing driving licence.', SARATHI_SERVICE_URL),
-  guidedApplicationService('svc-dl-duplicate', 'Duplicate Driving Licence', 'driving-licence', 'Apply for a duplicate driving licence.', SARATHI_SERVICE_URL),
-  guidedApplicationService('svc-dl-add-class', 'Addition of Vehicle Class to DL', 'driving-licence', 'Add an eligible class of vehicle to a driving licence.', SARATHI_SERVICE_URL),
-  guidedApplicationService('svc-dl-change-address', 'Change or Correction of DL Address', 'driving-licence', 'Update the address recorded on a driving licence.', SARATHI_SERVICE_URL),
-  guidedApplicationService('svc-dl-change-name', 'Change or Correction of DL Name', 'driving-licence', 'Request a name correction on a driving licence.', SARATHI_SERVICE_URL),
-  guidedApplicationService('svc-driving-school', 'Driving School Licence', 'driving-licence', 'Apply for and manage driving school licensing services.', SARATHI_SERVICE_URL),
+  guidedApplicationService('svc-dl-renewal', 'Driving Licence Renewal', 'driving-licence', 'Renew an existing driving licence.', SARATHI_SERVICE_URL, { officialForm: FORM_2 }),
+  guidedApplicationService('svc-dl-duplicate', 'Duplicate Driving Licence', 'driving-licence', 'Apply for a duplicate driving licence.', SARATHI_SERVICE_URL, { officialForm: FORM_2 }),
+  guidedApplicationService('svc-dl-add-class', 'Addition of Vehicle Class to DL', 'driving-licence', 'Add an eligible class of vehicle to a driving licence.', SARATHI_SERVICE_URL, { officialForm: FORM_2 }),
+  guidedApplicationService('svc-dl-change-address', 'Change or Correction of DL Address', 'driving-licence', 'Update the address recorded on a driving licence.', SARATHI_SERVICE_URL, { officialForm: FORM_2 }),
+  guidedApplicationService('svc-dl-change-name', 'Change or Correction of DL Name', 'driving-licence', 'Request a name correction on a driving licence.', SARATHI_SERVICE_URL, { officialForm: FORM_2 }),
+  guidedApplicationService('svc-driving-school', 'Driving School Licence', 'driving-licence', 'Apply for and manage driving school licensing services.', SARATHI_SERVICE_URL, { officialForm: { formNumber: 'Form 12', title: 'Application for Licence to Engage in the Business of Imparting Driving Instructions', path: '/forms/FORM-12.pdf' } }),
   guidedApplicationService('svc-vehicle-registration', 'Vehicle Registration', 'vehicle-registration', 'Access registration and registered-vehicle citizen services.', VAHAN_SERVICE_URL),
   guidedApplicationService('svc-vehicle-noc', 'No Objection Certificate', 'vehicle-registration', 'Apply online for a vehicle no objection certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-hypothecation', 'Hypothecation Services', 'vehicle-registration', 'Manage hypothecation entry, continuation, and termination services.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
@@ -202,7 +207,7 @@ export const serviceCatalog: ServiceDefinition[] = [
   guidedApplicationService('svc-tax-and-fee', 'Tax and Fee', 'permit-and-tax', 'Access vehicle tax and fee payment services.', OTHER_SERVICES_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-online-checkpost-tax', 'Online CheckPost Tax', 'permit-and-tax', 'Use the common platform for checkpost tax services.', OTHER_SERVICES_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-dealer-registration', 'Dealer Registration', 'business-and-manufacturer', 'Register dealers and access vehicle-registration enquiries.', OTHER_SERVICES_URL),
-  guidedApplicationService('svc-trade-certificate', 'Trade Certificate', 'business-and-manufacturer', 'Apply for dealer trade certificate services and payments.', OTHER_SERVICES_URL),
+  guidedApplicationService('svc-trade-certificate', 'Trade Certificate', 'business-and-manufacturer', 'Apply for dealer trade certificate services and payments.', OTHER_SERVICES_URL, { officialForm: { formNumber: 'Form 18', title: 'Intimation of Loss/Destruction of a Trade Certificate and Application for Duplicate', path: '/forms/FORM-18.pdf' } }),
   guidedApplicationService('svc-vltd', 'Vehicle Location Tracking Device', 'business-and-manufacturer', 'Access VLTD maker and tracking ecosystem services.', OTHER_SERVICES_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-speed-limiting-device', 'Speed Limiting Device', 'business-and-manufacturer', 'Manage speed limiting device inventory and tracking.', OTHER_SERVICES_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-cng-maker', 'CNG Maker', 'business-and-manufacturer', 'Access CNG kit manufacturer services.', PARIVAHAN_HOME_URL),

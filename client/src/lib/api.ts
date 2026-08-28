@@ -1,3 +1,4 @@
+import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import type {
   AgentMessage,
   AgentResponse,
@@ -15,8 +16,8 @@ import type {
   VehicleRecord
 } from '@parivahan/shared';
 
-// In local development Vite proxies this path to Nest. Deployments can set
-// VITE_API_URL to their public API URL without changing client code.
+// In local development Vite proxies this path to Nest or uses VITE_API_URL.
+// Deployments can set VITE_API_URL in .env to their public API URL (e.g., https://api-parivahan.vercel.app/v1)
 const API_BASE_URL = (import.meta.env.VITE_API_URL ?? '/v1').replace(/\/$/, '');
 
 export class ApiRequestError extends Error {
@@ -54,127 +55,149 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
     : fallback;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  let response: Response;
-
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(init?.headers as Record<string, string> | undefined) };
-  if (authToken) headers.Authorization = `Bearer ${authToken}`;
-
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
-  } catch {
-    throw new ApiRequestError('Unable to reach the service. Check that the server is running.');
+// Axios instance configured with base URL
+export const apiClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
   }
+});
 
-  if (!response.ok) {
-    const payload: unknown = await response.json().catch(() => null);
+// Attach Authorization header if token is present
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (authToken) {
+    config.headers.set('Authorization', `Bearer ${authToken}`);
+  }
+  return config;
+});
+
+// Intercept responses for unified error handling & 401 auto logout
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (!error.response) {
+      throw new ApiRequestError('Unable to reach the service. Check that the server is running.');
+    }
+
+    const status = error.response.status;
+    const payload = error.response.data;
     const message = extractErrorMessage(payload, 'The service could not complete this request.');
-    if (response.status === 401 && authToken) onUnauthorized?.();
-    throw new ApiRequestError(message, response.status);
-  }
 
-  const payload: unknown = await response.json().catch(() => null);
-  return payload as T;
+    if (status === 401 && authToken) {
+      onUnauthorized?.();
+    }
+
+    throw new ApiRequestError(message, status);
+  }
+);
+
+async function request<T>(path: string, options?: { method?: string; body?: unknown }): Promise<T> {
+  const method = options?.method?.toLowerCase() ?? 'get';
+  const response = await apiClient.request<T>({
+    url: path,
+    method,
+    data: options?.body
+  });
+  return response.data;
 }
 
-async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
-  const headers: Record<string, string> = { ...(init?.headers as Record<string, string> | undefined) };
-  if (authToken) headers.Authorization = `Bearer ${authToken}`;
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
-  } catch {
-    throw new ApiRequestError('Unable to reach the service. Check that the server is running.');
-  }
-
-  if (!response.ok) {
-    const payload: unknown = await response.json().catch(() => null);
-    const message = extractErrorMessage(payload, 'The document could not be generated.');
-    if (response.status === 401 && authToken) onUnauthorized?.();
-    throw new ApiRequestError(message, response.status);
-  }
-
-  return response.blob();
-}
-
-export function login(contact: string) {
+export async function login(contact: string): Promise<AuthSession> {
   return request<AuthSession>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ contact })
+    body: { contact }
   });
 }
 
-export function signup(input: { name: string; contact: string; preferredLanguage?: string }) {
+export async function signup(input: { name: string; contact: string; preferredLanguage?: string }): Promise<AuthSession> {
   return request<AuthSession>('/auth/signup', {
     method: 'POST',
-    body: JSON.stringify(input)
+    body: input
   });
 }
 
 /** Demo-only "sign in as" directory — every identity here is synthetic seed data. */
-export function getDemoUsers() {
+export async function getDemoUsers(): Promise<UserProfile[]> {
   return request<UserProfile[]>('/auth/demo-users');
 }
 
-export function getIdentity(userId: string) {
+export async function getIdentity(userId: string): Promise<IdentityBundle> {
   return request<IdentityBundle>(`/users/${encodeURIComponent(userId)}/identity`);
 }
 
-export function registerVehicle(userId: string, input: { registrationNumber: string; vehicleType: string }) {
+export async function registerVehicle(userId: string, input: { registrationNumber: string; vehicleType: string }): Promise<VehicleRecord> {
   return request<VehicleRecord>(`/users/${encodeURIComponent(userId)}/vehicles`, {
     method: 'POST',
-    body: JSON.stringify(input)
+    body: input
   });
 }
 
-export function resolveIntent(query: string) {
+export async function resolveIntent(query: string): Promise<{ intent: IntentResolution; service: ServiceDefinition | null }> {
   return request<{ intent: IntentResolution; service: ServiceDefinition | null }>('/intents/resolve', {
     method: 'POST',
-    body: JSON.stringify({ query })
+    body: { query }
   });
 }
 
-export function getWorkflow(serviceId: string) {
+export async function getWorkflow(serviceId: string): Promise<ServiceDefinition> {
   return request<ServiceDefinition>(`/workflows/${encodeURIComponent(serviceId)}`);
 }
 
-export function getServices() {
+export async function getServices(): Promise<ServiceDefinition[]> {
   return request<ServiceDefinition[]>('/services');
 }
 
-export function getMobilityIntelligence(userId: string) {
+export async function getMobilityIntelligence(userId: string): Promise<MobilityIntelligenceSnapshot> {
   return request<MobilityIntelligenceSnapshot>(`/users/${encodeURIComponent(userId)}/mobility-intelligence`);
 }
 
-export function getCase(caseId: string) {
+export async function getCase(caseId: string): Promise<CaseDetail> {
   return request<CaseDetail>(`/cases/${encodeURIComponent(caseId)}`);
 }
 
-export function createCase(input: CaseSubmissionInput) {
+export async function createCase(input: CaseSubmissionInput): Promise<CaseRecord> {
   return request<CaseRecord>('/cases', {
     method: 'POST',
-    body: JSON.stringify(input)
+    body: input
   });
 }
 
-export function askStandingAgent(userId: string, message: string, history: AgentMessage[], sessionId?: string) {
+export async function askStandingAgent(userId: string, message: string, history: AgentMessage[], sessionId?: string): Promise<AgentResponse> {
   return request<AgentResponse>(`/users/${encodeURIComponent(userId)}/standing-agent`, {
     method: 'POST',
-    body: JSON.stringify({ message, history, sessionId })
+    body: { message, history, sessionId }
   });
 }
 
-export function getComplianceSnapshot(userId: string) {
+export async function getComplianceSnapshot(userId: string): Promise<ComplianceSnapshot> {
   return request<ComplianceSnapshot>(`/users/${encodeURIComponent(userId)}/compliance`);
 }
 
-export function escalateCase(caseId: string) {
-  return request<CaseRecord>(`/cases/${encodeURIComponent(caseId)}/escalate`, { method: 'POST' });
+export async function escalateCase(caseId: string): Promise<CaseRecord> {
+  return request<CaseRecord>(`/cases/${encodeURIComponent(caseId)}/escalate`, {
+    method: 'POST'
+  });
+}
+
+/**
+ * The server regenerates this PDF from the case's own stored data on every
+ * request rather than caching a file.
+ */
+export async function getCaseDocumentBlob(caseId: string): Promise<Blob> {
+  try {
+    const response = await apiClient.get(`/cases/${encodeURIComponent(caseId)}/document`, {
+      responseType: 'blob'
+    });
+    return response.data as Blob;
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw error;
+    }
+    throw new ApiRequestError('The document could not be generated.');
+  }
 }
 
 export async function downloadCaseAcknowledgement(caseId: string): Promise<void> {
-  const blob = await requestBlob(`/cases/${encodeURIComponent(caseId)}/document`);
+  const blob = await getCaseDocumentBlob(caseId);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -185,11 +208,11 @@ export async function downloadCaseAcknowledgement(caseId: string): Promise<void>
   URL.revokeObjectURL(url);
 }
 
-export function getNotifications(userId: string) {
+export async function getNotifications(userId: string): Promise<AppNotification[]> {
   return request<AppNotification[]>(`/users/${encodeURIComponent(userId)}/notifications`);
 }
 
-export function markNotificationRead(userId: string, notificationId: string) {
+export async function markNotificationRead(userId: string, notificationId: string): Promise<AppNotification[]> {
   return request<AppNotification[]>(`/users/${encodeURIComponent(userId)}/notifications/${encodeURIComponent(notificationId)}/read`, {
     method: 'POST'
   });

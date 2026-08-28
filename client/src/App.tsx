@@ -20,6 +20,7 @@ import { AppNavigation } from './components/layout/AppNavigation';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { FloatingVoiceAssistant } from './components/voice/FloatingVoiceAssistant';
 import { MyVahanDashboard } from './components/dashboard/MyVahanDashboard';
+import { MyDocuments } from './components/dashboard/MyDocuments';
 import { IntentAssistant } from './components/intent/IntentAssistant';
 import { GuidedNavigator } from './components/navigator/GuidedNavigator';
 import { JourneyPreview } from './components/navigator/JourneyPreview';
@@ -375,6 +376,11 @@ export default function App() {
                 <MyVahanDashboard identity={identity} />
                 <MobilityScoreCard snapshot={mobilityIntelligence} />
               </div>
+              {identity ? (
+                <div className="mt-7">
+                  <MyDocuments cases={identity.cases} services={services} />
+                </div>
+              ) : null}
             </>
           );
         }
