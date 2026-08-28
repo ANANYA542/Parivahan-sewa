@@ -22,7 +22,9 @@ function getAllowedOrigins(): (string | RegExp)[] | boolean {
 
 async function bootstrapServerless() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
-  app.setGlobalPrefix('v1');
+  app.setGlobalPrefix('v1', {
+    exclude: ['/', 'health']
+  });
   app.enableCors({
     origin: getAllowedOrigins(),
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],

@@ -6,7 +6,6 @@ import { AppModule } from './app.module.js';
 function getAllowedOrigins(): (string | RegExp)[] | boolean {
   const clientOriginEnv = process.env.CLIENT_ORIGIN;
   if (!clientOriginEnv || clientOriginEnv.trim() === '*' || clientOriginEnv.trim() === '') {
-    // If not specified or set to '*', allow all origins in development/staging
     return true;
   }
   
@@ -20,7 +19,9 @@ function getAllowedOrigins(): (string | RegExp)[] | boolean {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('v1');
+  app.setGlobalPrefix('v1', {
+    exclude: ['/', 'health']
+  });
   
   app.enableCors({
     origin: getAllowedOrigins(),
@@ -38,7 +39,6 @@ async function bootstrap() {
     })
   );
 
-  // Most hosting platforms (Render, Railway, Fly.io, etc.) inject PORT
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port);
   console.log(`🚀 Server listening on port ${port}`);
