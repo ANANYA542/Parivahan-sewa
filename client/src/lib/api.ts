@@ -198,16 +198,28 @@ export async function escalateCase(caseId: string): Promise<CaseRecord> {
   });
 }
 
+function filenameFromContentDisposition(headerValue: unknown, fallback: string): string {
+  const match = typeof headerValue === 'string' ? headerValue.match(/filename="?([^"]+)"?/) : null;
+  return match?.[1] ?? fallback;
+}
+
 /**
  * The server regenerates this PDF from the case's own stored data on every
- * request rather than caching a file.
+ * request rather than caching a file. Its filename (via Content-Disposition)
+ * distinguishes a real filled government form (e.g. "case-016-FORM-2.pdf")
+ * from the generic acknowledgement — read it here rather than guessing
+ * client-side, so a citizen downloading the real form never sees a
+ * misleading "acknowledgement" filename.
  */
-export async function getCaseDocumentBlob(caseId: string): Promise<Blob> {
+export async function getCaseDocument(caseId: string): Promise<{ blob: Blob; filename: string }> {
   try {
     const response = await apiClient.get(`/cases/${encodeURIComponent(caseId)}/document`, {
       responseType: 'blob'
     });
-    return response.data as Blob;
+    return {
+      blob: response.data as Blob,
+      filename: filenameFromContentDisposition(response.headers['content-disposition'], `${caseId}-acknowledgement.pdf`)
+    };
   } catch (error) {
     if (error instanceof ApiRequestError) {
       throw error;
@@ -216,12 +228,17 @@ export async function getCaseDocumentBlob(caseId: string): Promise<Blob> {
   }
 }
 
+/** Back-compat alias returning just the blob, for callers that only need the bytes (e.g. rendering a preview). */
+export async function getCaseDocumentBlob(caseId: string): Promise<Blob> {
+  return (await getCaseDocument(caseId)).blob;
+}
+
 export async function downloadCaseAcknowledgement(caseId: string): Promise<void> {
-  const blob = await getCaseDocumentBlob(caseId);
+  const { blob, filename } = await getCaseDocument(caseId);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${caseId}-acknowledgement.pdf`;
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();

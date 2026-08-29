@@ -63,8 +63,17 @@ export interface ServiceDefinition {
   officialForm?: {
     formNumber: string;
     title: string;
-    /** Path served by the client app, e.g. "/forms/FORM-2.pdf". */
+    /** Path served by the client app, e.g. "/forms/FORM-2.pdf" — the BLANK template, shown as a reference before the guided flow starts. */
     path: string;
+    /**
+     * True only when server/src/modules/documents/official-form-filler.ts
+     * has a real, coordinate-mapped filler for this service — meaning the
+     * document a citizen downloads after submitting is this actual form
+     * with their answers drawn onto it, not just a link to the blank PDF
+     * above. False/omitted (e.g. PUC's Form 59, an issued certificate
+     * reference) means only the blank template is available.
+     */
+    fillable?: boolean;
   };
 }
 

@@ -11,6 +11,19 @@
  * To add a new form: drop the PDF in client/public/forms/, add a row here,
  * and — only for a clean, confident match — set `wiredToServiceIds` and
  * add the corresponding `officialForm` entry on that service in engine.ts.
+ *
+ * Being "wired" here means the blank template is linked as a reference —
+ * it does NOT by itself mean a citizen's answers get drawn onto it. Real
+ * fill-in requires a matching entry in
+ * server/src/modules/documents/official-form-filler.ts, which measures
+ * exact coordinates off the form's own layout and requires the guided
+ * service to actually collect the specific fields that form asks for (see
+ * `detailFields` on the matching `guidedApplicationService(...)` call in
+ * engine.ts). As of this catalog: FORM 2, FORM 12, and FORM 18 are real,
+ * coordinate-mapped fill-ins — `officialForm.fillable: true` on those
+ * services. FORM 59 (PUC) is wired only as a reference to what an issued
+ * certificate looks like; it is never filled in, because a citizen doesn't
+ * fill out a paper PUC application in the first place.
  */
 
 export type OfficialFormCategory =

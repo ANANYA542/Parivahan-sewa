@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import type { CaseDetail } from '@parivahan/shared';
+import { fillOfficialForm } from './official-form-filler.js';
 
 const PAGE_WIDTH = 595.28; // A4 in points
 const PAGE_HEIGHT = 841.89;
@@ -68,6 +69,21 @@ function documentTitleFor(caseDetail: CaseDetail): string {
 
 @Injectable()
 export class DocumentsService {
+  /**
+   * Returns the real government form filled with this case's own answers
+   * when one exists for this service (see official-form-filler.ts); falls
+   * back to the generic from-scratch acknowledgement otherwise. This is the
+   * single source the download/preview/"download again" paths all share —
+   * a case's document doesn't quietly differ by which route fetched it.
+   */
+  async generateCaseDocument(caseDetail: CaseDetail): Promise<{ bytes: Uint8Array; filename: string }> {
+    const officialForm = await fillOfficialForm(caseDetail);
+    if (officialForm) {
+      return { bytes: officialForm.bytes, filename: `${caseDetail.caseId}-${officialForm.formNumber}.pdf` };
+    }
+    return { bytes: await this.generateCaseAcknowledgement(caseDetail), filename: `${caseDetail.caseId}-acknowledgement.pdf` };
+  }
+
   async generateCaseAcknowledgement(caseDetail: CaseDetail): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);

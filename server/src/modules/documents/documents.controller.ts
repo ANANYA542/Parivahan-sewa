@@ -20,9 +20,9 @@ export class DocumentsController {
       throw new ForbiddenException('This case does not belong to the requesting user.');
     }
 
-    const pdfBytes = await this.documentsService.generateCaseAcknowledgement(caseDetail);
+    const { bytes, filename } = await this.documentsService.generateCaseDocument(caseDetail);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${caseDetail.caseId}-acknowledgement.pdf"`);
-    res.send(Buffer.from(pdfBytes));
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(Buffer.from(bytes));
   }
 }

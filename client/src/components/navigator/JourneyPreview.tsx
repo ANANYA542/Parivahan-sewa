@@ -59,7 +59,18 @@ export function JourneyPreview({ service, onStart, onChooseAnother }: JourneyPre
         <p className="mt-5 text-sm leading-6 text-slate-400">This service is delivered through the official Parivahan portal. Availability and document requirements can vary by state and RTO.</p>
       ) : null}
 
-      {service.officialForm ? (
+      {service.officialForm?.fillable ? (
+        <div className="mt-5 flex items-start gap-3 rounded-2xl border border-dashed border-orange-200 bg-orange-50/40 p-4 text-sm">
+          <span aria-hidden="true" className="text-lg">📄</span>
+          <span>
+            <span className="block font-medium text-orange-800">Your answers fill the real {service.officialForm.formNumber}</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-600">
+              {service.officialForm.title} — what you enter below is drawn directly onto this real government form; the completed copy becomes downloadable once you submit.{' '}
+              <a href={service.officialForm.path} target="_blank" rel="noreferrer" className="underline hover:text-orange-700">View the blank form</a>.
+            </span>
+          </span>
+        </div>
+      ) : service.officialForm ? (
         <a
           href={service.officialForm.path}
           target="_blank"
