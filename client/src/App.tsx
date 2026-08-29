@@ -32,6 +32,9 @@ import { MobilityNudges } from './components/intelligence/MobilityNudges';
 import { ServiceCatalog } from './components/services/ServiceCatalog';
 import { StandingAgentPanel } from './components/phase3/StandingAgentPanel';
 import { AddVehicleOnboarding } from './components/onboarding/AddVehicleOnboarding';
+import { VehicleHealthView } from './components/insights/VehicleHealthView';
+import { PollutionTrackerView } from './components/insights/PollutionTrackerView';
+import { FuelConsumptionView } from './components/insights/FuelConsumptionView';
 import {
   createCase,
   downloadCaseAcknowledgement,
@@ -147,6 +150,14 @@ export default function App() {
   useEffect(() => {
     if (!userId) return;
     let isCurrent = true;
+
+    // A fresh, valid session (a new sign-in, or one restored from localStorage
+    // on load) starting to load its own data means any earlier "session
+    // expired"/action error is now stale — otherwise it would keep showing
+    // indefinitely even once everything is working again, with nothing left
+    // to actually clear it.
+    setLoadError(null);
+    setCaseActionError(null);
 
     try {
       setOnboardingSkipped(window.localStorage.getItem(onboardingSkipKey(userId)) === 'true');
@@ -462,26 +473,24 @@ export default function App() {
           </>
         );
       case 'health':
+        return (
+          <>
+            <PageHeading route={route} />
+            <VehicleHealthView identity={identity} mobilityIntelligence={mobilityIntelligence} onAddVehicle={() => navigateTo('dashboard')} />
+          </>
+        );
       case 'pollution':
+        return (
+          <>
+            <PageHeading route={route} />
+            <PollutionTrackerView identity={identity} mobilityIntelligence={mobilityIntelligence} onRenewPuc={() => openServiceJourney('svc-renew-puc')} />
+          </>
+        );
       case 'fuel':
         return (
           <>
             <PageHeading route={route} />
-            <div className="mt-7 rounded-2xl border border-slate-800 bg-slate-800 px-5 py-4 text-sm text-slate-400">This view is illustrative only in the current prototype — see My Vahan on the dashboard for the underlying document status.</div>
-            <div className="mt-5 flex flex-col items-center rounded-2xl border border-dashed border-slate-800 px-6 py-16 text-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-xl" aria-hidden="true">
-                {route === 'health' ? '🩺' : route === 'pollution' ? '🌫️' : '⛽'}
-              </span>
-              <p className="mt-4 text-sm font-medium text-slate-300">This view is still being built.</p>
-              <p className="mt-1 max-w-sm text-sm leading-6 text-slate-400">In the meantime, My Vahan on the dashboard already tracks the real document status behind this.</p>
-              <button
-                type="button"
-                onClick={() => navigateTo('dashboard')}
-                className="mt-5 rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition-colors duration-150 hover:border-slate-600 hover:text-slate-50"
-              >
-                Back to dashboard
-              </button>
-            </div>
+            <FuelConsumptionView identity={identity} />
           </>
         );
     }
