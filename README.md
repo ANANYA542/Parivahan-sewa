@@ -62,7 +62,7 @@ Two other surfaces were walked the same way: the **Services** catalog (browse by
 |---|---|---|
 | The guided accident-report flow, its fields, and the submit → Case → PDF pipeline | **Real** | This is the actual, working flagship path, exercised end-to-end with a real browser in this session |
 | All personal, vehicle, and case data | **Synthetic, in-memory** | No real government data, Aadhaar/PAN, or payments are touched — required by the brief, and resets on server restart by design |
-| Database | **In-memory, not Postgres** | A Prisma schema exists and matches the data model, but wiring it in was deliberately deprioritized under deadline pressure in favor of a fully working citizen journey |
+| Database | **Real Postgres** (users, vehicles, cases) | Started as an in-memory store, then genuinely wired to Postgres via Prisma — this specifically matters because the server deploys as a Vercel serverless function, where separate invocations don't share memory. An in-memory store meant a case submitted in one invocation could 404 in the very next one the moment a fresh cold start handled it; that's now fixed at the data layer, not papered over in the UI. The service catalog itself stays static in-code (it's identical, deterministic content regardless of which process serves it, so persisting it would add a second, weaker-typed copy for no benefit) |
 | Generated case PDFs | **Real PDFs, honestly labelled** | Framed explicitly as a citizen's own structured copy — useful for filing a police FIR or an insurance claim — never presented as an official government document, because no such official digital form exists for this service today |
 | Official Vahan/Sarathi/eChallan/PUCC links | **Real URLs, untouched** | Services that need them hand off to the real portal rather than simulating or scraping it |
 | Official government forms (25 real CMVR forms) | **Real PDFs, individually read and catalogued; 9 services genuinely auto-fill, none of the others are guessed** | Every form was opened and read (not guessed from filename) before being catalogued. For Form 2 (7 licence services), Form 12 (driving school), and Form 18 (trade certificate), the citizen's guided-flow answers are drawn onto the actual government PDF's own printed answer lines/checkboxes — coordinates measured directly off each form, not estimated — so the download is the real form, filled, not a blank template. Form 59 (PUC) stays a reference-only link since it's an issued certificate, not something a citizen fills in. Every other service keeps its official-portal link with an explicit "no local form on file" note rather than a forced guess |
@@ -78,7 +78,7 @@ Two other surfaces were walked the same way: the **Services** catalog (browse by
 
 ## How this would work safely at real scale
 
-1. **Data layer** — swap the in-memory repository for the already-defined Prisma/Postgres schema; the service method signatures were designed as a drop-in replacement.
+1. **Data layer** — done: users, vehicles, and cases are real Postgres rows via Prisma, not an in-memory array. What's left for real scale is connection pooling (PgBouncer or Prisma Accelerate) in front of Postgres — the `connection_limit` set in `DATABASE_URL` is a stopgap for hackathon-scale traffic, not a production pooling story.
 2. **Auth** — replace contact-number-only login with real OTP/Aadhaar-linked authentication, which itself depends on a verified government identity API partnership — not something to simulate locally.
 3. **Government integration** — `official_portal` services already link to the real Vahan/Sarathi/eChallan/PUCC URLs rather than faking them; production means a verified API partnership with MoRTH/NIC for the services that can be brought fully in-app, not scraping those systems.
 4. **AI/voice** — point the existing OpenAI-compatible client at a real OpenAI key and model (a same-day change), and replace the hand-written knowledge base with a real embeddings-based RAG pipeline over a larger, regularly-refreshed corpus (state-specific fees, live SLAs, official notifications).
@@ -90,7 +90,11 @@ Two other surfaces were walked the same way: the **Services** catalog (browse by
 
 ```bash
 npm install
-# add JWT_SECRET (any random string) and GROQ_API_KEY to server/.env — see server/.env.example
+# add JWT_SECRET, GROQ_API_KEY, and DATABASE_URL (a real Postgres connection string) to
+# server/.env — see server/.env.example
+npm run prisma:generate --workspace @parivahan/server   # generate the Prisma client
+npm run prisma:push --workspace @parivahan/server       # create the tables (a fresh DB has none yet)
+npm run prisma:seed --workspace @parivahan/server       # load the demo users/vehicles/cases (safe to re-run — upserts by ID)
 npm run dev:server   # terminal 1
 npm run dev:client   # terminal 2
 ```
@@ -102,7 +106,7 @@ Open the client and either sign in via the demo-user picker or sign up fresh (no
 Both `client/` and `server/` are already configured for Vercel (`client/vercel.json`, `server/vercel.json`, `server/api/index.ts` as the serverless entry point) and were smoke-tested locally as serverless handlers before this note was written. To go live (a few minutes, from the Vercel dashboard — no CLI login needed):
 
 1. Import the GitHub repo into Vercel twice, as two separate projects: one rooted at `server/` (framework preset: Other), one rooted at `client/` (framework preset: Vite).
-2. On the **server** project, set environment variables `JWT_SECRET` and `GROQ_API_KEY` (see `server/.env.example`), and set `CLIENT_ORIGIN` to the client project's eventual URL once known.
+2. On the **server** project, set environment variables `JWT_SECRET`, `GROQ_API_KEY`, and `DATABASE_URL` (see `server/.env.example`), and set `CLIENT_ORIGIN` to the client project's eventual URL once known. The Prisma query engine is built for Vercel's actual runtime automatically as part of the build (`prisma generate` runs in `prebuild`, targeting `rhel-openssl-3.0.x`) — no extra step needed.
 3. On the **client** project, set `VITE_API_URL` to the server project's URL with `/v1` appended (e.g. `https://parivahan-server.vercel.app/v1`).
 4. Redeploy the server once the client's URL is known, so `CLIENT_ORIGIN` is accurate (CORS otherwise defaults to allow-all, which is safe but looser than necessary).
 

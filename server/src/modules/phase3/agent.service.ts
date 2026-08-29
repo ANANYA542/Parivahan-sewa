@@ -48,7 +48,7 @@ export class AgentService {
   async respond(userId: string, message: string, clientHistory: AgentMessage[], requestedSessionId?: string): Promise<AgentResponse> {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new ServiceUnavailableException('Standing Agent is not configured. Add GROQ_API_KEY to the server environment.');
-    this.coreData.getIdentityBundle(userId);
+    await this.coreData.getIdentityBundle(userId);
 
     const sessionId = this.resolveSessionId(userId, requestedSessionId);
     const session = this.sessions.get(sessionId)!;
@@ -96,7 +96,7 @@ export class AgentService {
         // a bare 404 instead of letting the assistant say so in plain language.
         let result: unknown;
         try {
-          result = this.executeTool(userId, call.function.name, call.function.arguments);
+          result = await this.executeTool(userId, call.function.name, call.function.arguments);
         } catch (reason) {
           result = { error: reason instanceof Error ? reason.message : 'That request could not be completed.' };
         }
@@ -130,7 +130,7 @@ export class AgentService {
     }
   }
 
-  private executeTool(userId: string, name: string, rawArguments: string): unknown {
+  private async executeTool(userId: string, name: string, rawArguments: string): Promise<unknown> {
     const args = this.parseArguments(rawArguments);
     switch (name) {
       case 'getCase': {
@@ -139,15 +139,15 @@ export class AgentService {
         // controller) — this tool must enforce that check itself, or a
         // hallucinated or guessed caseId could leak another citizen's case
         // details (including their submissionData) into this chat.
-        const caseDetail = this.coreData.getCase(String(args.caseId));
+        const caseDetail = await this.coreData.getCase(String(args.caseId));
         if (caseDetail.userId !== userId) return { error: 'That case does not belong to this citizen.' };
         return caseDetail;
       }
       case 'getPointsLedger': return this.compliance.getPointsLedger(userId);
-      case 'getDocumentStatus': return this.coreData.getIdentityBundle(userId).vehicles.map((vehicle) => ({ registrationNumber: vehicle.registrationNumber, documentStatus: vehicle.documentStatus }));
+      case 'getDocumentStatus': return (await this.coreData.getIdentityBundle(userId)).vehicles.map((vehicle) => ({ registrationNumber: vehicle.registrationNumber, documentStatus: vehicle.documentStatus }));
       case 'draftEscalation': return { status: 'draft_only', caseId: String(args.caseId), draft: `Escalation draft for ${String(args.caseId)}: ${String(args.reason)}. Review and submit through the case workflow.` };
       case 'checkNOCEligibility': {
-        const vehicle = this.coreData.getIdentityBundle(userId).vehicles.find((item) => item.vehicleId === args.vehicleId);
+        const vehicle = (await this.coreData.getIdentityBundle(userId)).vehicles.find((item) => item.vehicleId === args.vehicleId);
         return vehicle ? { vehicleId: vehicle.vehicleId, eligibleToStart: vehicle.documentStatus.rc === 'active' && vehicle.documentStatus.puc === 'active', note: 'Basic demo readiness only; RTO rules and pending liabilities must be verified officially.' } : { error: 'Vehicle not found for this citizen.' };
       }
       case 'generatePdf': return { status: 'draft_request_only', caseId: String(args.caseId), note: 'A document draft can be generated from collected case data; this is not an issued government document.' };

@@ -29,27 +29,6 @@ async function main() {
     });
   }
 
-  for (const service of seedData.services) {
-    await prisma.service.upsert({
-      where: { serviceId: service.serviceId },
-      update: {
-        name: service.name,
-        category: service.category,
-        description: service.description,
-        delivery: service.delivery,
-        officialUrl: service.officialUrl ?? null,
-        steps: toJson(service.steps),
-        requiredDocuments: toJson(service.requiredDocuments)
-      },
-      create: {
-        ...service,
-        officialUrl: service.officialUrl ?? null,
-        steps: toJson(service.steps),
-        requiredDocuments: toJson(service.requiredDocuments)
-      }
-    });
-  }
-
   for (const caseRecord of seedData.cases) {
     const values = {
       type: caseRecord.type,

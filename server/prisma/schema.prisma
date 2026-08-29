@@ -1,5 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" keeps local dev working on this machine; "rhel-openssl-3.0.x" is
+  // the binary Prisma needs for Vercel's actual Node.js serverless runtime —
+  // without it, the query engine simply isn't present in the deployed
+  // function and every database call throws at request time, not at build
+  // time, since Vercel's own build step can't (and doesn't) catch this.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -7,58 +13,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Only the truly dynamic, user-generated data lives here. The service
+// catalog (packages/shared/src/engine.ts) is static reference data compiled
+// into the app itself — every field a citizen actually fills in (steps,
+// officialForm, fieldOptions, ...) lives there with full type safety, and
+// duplicating it into a Json-blob DB table would only add a second,
+// weaker-typed copy to keep in sync for no benefit. Cases reference a
+// serviceId as a plain string, validated against that in-code catalog at
+// the application layer instead of a DB foreign key.
 model User {
-  userId            String   @id @default(cuid())
+  userId            String    @id @default(cuid())
   name              String
   contact           String
-  preferredLanguage String   @default("en")
-  mobilityScore     Int?     @default(0)
+  preferredLanguage String    @default("en")
   vehicles          Vehicle[]
   cases             Case[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model Vehicle {
-  vehicleId         String   @id @default(cuid())
-  ownerId           String
-  registrationNumber String  @unique
-  vehicleType       String
-  documentStatus    Json
-  owner             User     @relation(fields: [ownerId], references: [userId], onDelete: Cascade)
-  cases             Case[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
-model Service {
-  serviceId          String   @id @default(cuid())
-  name               String
-  category           String
-  description        String   @default("")
-  delivery           String   @default("official_portal")
-  officialUrl        String?
-  steps              Json
-  requiredDocuments  Json
+  vehicleId          String   @id @default(cuid())
+  ownerId            String
+  registrationNumber String   @unique
+  vehicleType        String
+  documentStatus     Json
+  owner              User     @relation(fields: [ownerId], references: [userId], onDelete: Cascade)
   cases              Case[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
 
 model Case {
-  caseId        String   @id @default(cuid())
-  type          String
-  userId        String
-  vehicleId     String?
-  serviceId     String
-  stage         String
-  status        String
-  slaDeadline   DateTime?
+  caseId         String    @id @default(cuid())
+  type           String
+  userId         String
+  vehicleId      String?
+  serviceId      String
+  stage          String
+  status         String
+  slaDeadline    DateTime?
   submissionData Json
   stageHistory   Json
-  user          User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  vehicle       Vehicle? @relation(fields: [vehicleId], references: [vehicleId], onDelete: SetNull)
-  service       Service  @relation(fields: [serviceId], references: [serviceId], onDelete: Restrict)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  user           User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  vehicle        Vehicle?  @relation(fields: [vehicleId], references: [vehicleId], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

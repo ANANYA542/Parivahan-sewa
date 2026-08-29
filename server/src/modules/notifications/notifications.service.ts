@@ -18,9 +18,9 @@ export class NotificationsService {
     @Inject(MobilityIntelligenceService) private readonly mobilityIntelligence: MobilityIntelligenceService
   ) {}
 
-  list(userId: string): AppNotification[] {
-    const bundle = this.coreData.getIdentityBundle(userId);
-    const nudges = this.mobilityIntelligence.getNudges(userId);
+  async list(userId: string): Promise<AppNotification[]> {
+    const bundle = await this.coreData.getIdentityBundle(userId);
+    const nudges = await this.mobilityIntelligence.getNudges(userId);
     const read = this.readIds.get(userId) ?? new Set<string>();
 
     const computedAt = new Date().toISOString();
@@ -49,7 +49,7 @@ export class NotificationsService {
     });
   }
 
-  markRead(userId: string, notificationId: string): AppNotification[] {
+  async markRead(userId: string, notificationId: string): Promise<AppNotification[]> {
     const current = this.readIds.get(userId) ?? new Set<string>();
     current.add(notificationId);
     this.readIds.set(userId, current);

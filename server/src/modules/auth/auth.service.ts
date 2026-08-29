@@ -24,8 +24,8 @@ export class AuthService {
     }
   }
 
-  login(contact: string): AuthSession {
-    const user = this.coreData.findUserByContact(contact);
+  async login(contact: string): Promise<AuthSession> {
+    const user = await this.coreData.findUserByContact(contact);
     if (!user) {
       throw new UnauthorizedException('No account matches that contact detail.');
     }
@@ -33,8 +33,8 @@ export class AuthService {
     return { token: this.issueToken(user), user };
   }
 
-  signup(input: { name: string; contact: string; preferredLanguage?: string }): AuthSession {
-    const user = this.coreData.registerUser(input);
+  async signup(input: { name: string; contact: string; preferredLanguage?: string }): Promise<AuthSession> {
+    const user = await this.coreData.registerUser(input);
     return { token: this.issueToken(user), user };
   }
 

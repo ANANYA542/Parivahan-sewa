@@ -15,7 +15,7 @@ export class DocumentsController {
 
   @Get()
   async downloadAcknowledgement(@Param('caseId') caseId: string, @CurrentUserId() userId: string, @Res() res: Response) {
-    const caseDetail = this.coreData.getCase(caseId);
+    const caseDetail = await this.coreData.getCase(caseId);
     if (caseDetail.userId !== userId) {
       throw new ForbiddenException('This case does not belong to the requesting user.');
     }

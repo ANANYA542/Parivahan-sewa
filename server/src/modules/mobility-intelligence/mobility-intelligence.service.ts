@@ -28,16 +28,16 @@ export class MobilityIntelligenceService implements OnModuleInit, OnModuleDestro
     if (this.refreshTimer) clearInterval(this.refreshTimer);
   }
 
-  getSnapshot(userId: string): MobilityIntelligenceSnapshot {
+  async getSnapshot(userId: string): Promise<MobilityIntelligenceSnapshot> {
     return this.refreshUser(userId);
   }
 
-  getNudges(userId: string): MobilityNudge[] {
-    return this.getSnapshot(userId).nudges;
+  async getNudges(userId: string): Promise<MobilityNudge[]> {
+    return (await this.getSnapshot(userId)).nudges;
   }
 
-  refreshUser(userId: string): MobilityIntelligenceSnapshot {
-    const bundle = this.coreData.getIdentityBundle(userId);
+  async refreshUser(userId: string): Promise<MobilityIntelligenceSnapshot> {
+    const bundle = await this.coreData.getIdentityBundle(userId);
     const score = computeMobilityScore(bundle);
     const complianceAlerts = buildComplianceAlerts(bundle);
     const snapshot: MobilityIntelligenceSnapshot = {
@@ -54,8 +54,9 @@ export class MobilityIntelligenceService implements OnModuleInit, OnModuleDestro
   }
 
   private async refreshAll() {
-    for (const userId of this.coreData.listUserIds()) {
-      this.refreshUser(userId);
+    const userIds = await this.coreData.listUserIds();
+    for (const userId of userIds) {
+      await this.refreshUser(userId);
     }
   }
 }

@@ -6,16 +6,16 @@ import { CoreDataService } from '../../common/core-data.service.js';
 export class ComplianceService {
   constructor(@Inject(CoreDataService) private readonly coreData: CoreDataService) {}
 
-  getSnapshot(userId: string): ComplianceSnapshot {
+  async getSnapshot(userId: string): Promise<ComplianceSnapshot> {
     return {
-      pointsLedger: this.getPointsLedger(userId),
+      pointsLedger: await this.getPointsLedger(userId),
       scamSignals: this.getScamSignals(),
       disclaimer: 'Demo intelligence only. Verify challans and payments on the official eChallan portal.'
     };
   }
 
-  getPointsLedger(userId: string): PointsLedger {
-    const cases = this.coreData.listCases(userId).filter((item) => item.type === 'challan');
+  async getPointsLedger(userId: string): Promise<PointsLedger> {
+    const cases = (await this.coreData.listCases(userId)).filter((item) => item.type === 'challan');
     const entries = cases.map((item) => ({
       caseId: item.caseId,
       points: item.status === 'resolved' ? 0 : 2,

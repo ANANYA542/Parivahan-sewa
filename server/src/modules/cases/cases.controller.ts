@@ -16,8 +16,8 @@ export class CasesController {
   }
 
   @Get('cases/:caseId')
-  getCase(@Param('caseId') caseId: string, @CurrentUserId() userId: string) {
-    const caseDetail = this.coreData.getCase(caseId);
+  async getCase(@Param('caseId') caseId: string, @CurrentUserId() userId: string) {
+    const caseDetail = await this.coreData.getCase(caseId);
     if (caseDetail.userId !== userId) {
       throw new ForbiddenException('This case does not belong to the requesting user.');
     }
@@ -32,8 +32,8 @@ export class CasesController {
   }
 
   @Post('cases/:caseId/escalate')
-  escalate(@Param('caseId') caseId: string, @CurrentUserId() userId: string) {
-    this.coreData.escalateCase(caseId, userId);
+  async escalate(@Param('caseId') caseId: string, @CurrentUserId() userId: string) {
+    await this.coreData.escalateCase(caseId, userId);
     return this.coreData.getCase(caseId);
   }
 }

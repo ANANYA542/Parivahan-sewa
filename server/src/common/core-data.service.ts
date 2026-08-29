@@ -1,4 +1,5 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma, User as UserRow, Vehicle as VehicleRow, Case as CaseRow } from '@prisma/client';
 import {
   buildEscalationStageHistoryItem,
   ESCALATION_NOTE,
@@ -7,33 +8,90 @@ import {
   type CaseDetail,
   type CaseRecord,
   type CaseSubmissionRequest,
-  type IdentityBundle,
+  type CaseStatus,
+  type CaseType,
   type ServiceDefinition,
+  type StageHistoryItem,
+  type SubmissionData,
   type UserProfile,
   type VehicleRecord
 } from '@parivahan/shared';
+import { PrismaService } from './prisma.service.js';
 
 const CLOSED_CASE_STATUSES = new Set(['resolved', 'rejected']);
-
 const SLA_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 
-function copy<T>(value: T): T {
-  return structuredClone(value);
+function toJson(value: unknown): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
 }
 
+function toUserProfile(row: UserRow): UserProfile {
+  return { userId: row.userId, name: row.name, contact: row.contact, preferredLanguage: row.preferredLanguage };
+}
+
+function toVehicleRecord(row: VehicleRow): VehicleRecord {
+  return {
+    vehicleId: row.vehicleId,
+    ownerId: row.ownerId,
+    registrationNumber: row.registrationNumber,
+    vehicleType: row.vehicleType,
+    documentStatus: (row.documentStatus ?? {}) as VehicleRecord['documentStatus']
+  };
+}
+
+function toCaseRecord(row: CaseRow): CaseRecord {
+  return {
+    caseId: row.caseId,
+    type: row.type as CaseType,
+    userId: row.userId,
+    vehicleId: row.vehicleId,
+    serviceId: row.serviceId,
+    stage: row.stage,
+    status: row.status as CaseStatus,
+    slaDeadline: row.slaDeadline ? row.slaDeadline.toISOString() : null,
+    submissionData: row.submissionData as SubmissionData,
+    stageHistory: row.stageHistory as unknown as StageHistoryItem[],
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString()
+  };
+}
+
+/**
+ * Users, vehicles, and cases are the only genuinely dynamic data in this
+ * app, so they're the only things persisted to Postgres (see
+ * prisma/schema.prisma) — everything else here (the service catalog) is
+ * static reference data compiled into the app itself, kept in memory since
+ * it's identical, deterministic content on every request regardless of
+ * which server process handles it.
+ *
+ * This matters specifically because the server runs as a Vercel serverless
+ * function: separate invocations can land on separate, memory-isolated
+ * instances. A plain in-memory array (the previous implementation) meant a
+ * case created in one invocation could 404 in the very next one, the moment
+ * a fresh cold start happened to handle it — a citizen's own submitted case
+ * silently disappearing. Persisting to a real database is what actually
+ * fixes that, not just working around it in the UI.
+ */
 @Injectable()
 export class CoreDataService {
-  private readonly users: UserProfile[] = copy(seedData.users);
-  private readonly vehicles: VehicleRecord[] = copy(seedData.vehicles);
-  private readonly services: ServiceDefinition[] = copy(seedData.services);
-  private readonly cases: CaseRecord[] = copy(seedData.cases);
+  private readonly services: ServiceDefinition[] = structuredClone(seedData.services);
 
-  getIdentityBundle(userId: string): IdentityBundle {
-    const user = this.findUser(userId);
-    const vehicles = this.vehicles.filter((vehicle) => vehicle.ownerId === userId);
-    const cases = this.cases.filter((item) => item.userId === userId);
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-    return copy({ user, vehicles, cases });
+  async getIdentityBundle(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { userId },
+      include: { vehicles: true, cases: true }
+    });
+    if (!user) {
+      throw new NotFoundException(`User ${userId} was not found.`);
+    }
+
+    return {
+      user: toUserProfile(user),
+      vehicles: user.vehicles.map(toVehicleRecord),
+      cases: user.cases.map(toCaseRecord)
+    };
   }
 
   getWorkflow(serviceId: string): ServiceDefinition {
@@ -41,37 +99,37 @@ export class CoreDataService {
     if (!service) {
       throw new NotFoundException(`Service ${serviceId} was not found.`);
     }
-
-    return copy(service);
+    return structuredClone(service);
   }
 
   listServices(): ServiceDefinition[] {
-    return copy([...this.services].sort((first, second) => first.name.localeCompare(second.name)));
+    return structuredClone([...this.services].sort((first, second) => first.name.localeCompare(second.name)));
   }
 
-  listUserIds(): string[] {
-    return this.users.map((user) => user.userId);
+  async listUserIds(): Promise<string[]> {
+    const users = await this.prisma.user.findMany({ select: { userId: true } });
+    return users.map((user) => user.userId);
   }
 
   /** Demo-login directory only: the seed identities are entirely synthetic. */
-  listUsersPublic(): UserProfile[] {
-    return copy([...this.users].sort((first, second) => first.name.localeCompare(second.name)));
+  async listUsersPublic(): Promise<UserProfile[]> {
+    const users = await this.prisma.user.findMany({ orderBy: { name: 'asc' } });
+    return users.map(toUserProfile);
   }
 
-  findUserByContact(contact: string): UserProfile | undefined {
+  async findUserByContact(contact: string): Promise<UserProfile | undefined> {
     const normalized = contact.trim().toLowerCase();
-    const user = this.users.find((item) => item.contact.trim().toLowerCase() === normalized);
-    return user ? copy(user) : undefined;
+    const users = await this.prisma.user.findMany();
+    const match = users.find((user) => user.contact.trim().toLowerCase() === normalized);
+    return match ? toUserProfile(match) : undefined;
   }
 
-  registerUser(input: { name: string; contact: string; preferredLanguage?: string }): UserProfile {
+  async registerUser(input: { name: string; contact: string; preferredLanguage?: string }): Promise<UserProfile> {
     const normalizedContact = input.contact.trim();
     if (!normalizedContact) {
       throw new BadRequestException('Contact number is required.');
     }
-    const existing = this.users.find(
-      (item) => item.contact.trim().toLowerCase() === normalizedContact.toLowerCase()
-    );
+    const existing = await this.findUserByContact(normalizedContact);
     if (existing) {
       throw new BadRequestException('An account with this contact number already exists. Please sign in.');
     }
@@ -81,57 +139,44 @@ export class CoreDataService {
       throw new BadRequestException('Full name is required.');
     }
 
-    const userId = `user-${String(this.users.length + 1).padStart(3, '0')}`;
-    const newUser: UserProfile = {
-      userId,
-      name: trimmedName,
-      contact: normalizedContact,
-      preferredLanguage: input.preferredLanguage?.trim() || 'en'
-    };
-
-    this.users.push(newUser);
-    return copy(newUser);
+    const created = await this.prisma.user.create({
+      data: {
+        name: trimmedName,
+        contact: normalizedContact,
+        preferredLanguage: input.preferredLanguage?.trim() || 'en'
+      }
+    });
+    return toUserProfile(created);
   }
 
-  getCase(caseId: string): CaseDetail {
-    const caseRecord = this.cases.find((item) => item.caseId === caseId);
-    if (!caseRecord) {
+  async getCase(caseId: string): Promise<CaseDetail> {
+    const caseRow = await this.prisma.case.findUnique({ where: { caseId }, include: { vehicle: true } });
+    if (!caseRow) {
       throw new NotFoundException(`Case ${caseId} was not found.`);
     }
 
-    const service = this.services.find((item) => item.serviceId === caseRecord.serviceId);
+    const service = this.services.find((item) => item.serviceId === caseRow.serviceId);
     if (!service) {
       throw new NotFoundException(`Service for case ${caseId} was not found.`);
     }
 
-    const vehicle = caseRecord.vehicleId
-      ? this.vehicles.find((item) => item.vehicleId === caseRecord.vehicleId) ?? null
-      : null;
-
-    return copy({
-      ...caseRecord,
-      service: {
-        serviceId: service.serviceId,
-        name: service.name,
-        category: service.category
-      },
-      vehicle: vehicle
-        ? {
-            vehicleId: vehicle.vehicleId,
-            registrationNumber: vehicle.registrationNumber,
-            vehicleType: vehicle.vehicleType
-          }
+    return {
+      ...toCaseRecord(caseRow),
+      service: { serviceId: service.serviceId, name: service.name, category: service.category },
+      vehicle: caseRow.vehicle
+        ? { vehicleId: caseRow.vehicle.vehicleId, registrationNumber: caseRow.vehicle.registrationNumber, vehicleType: caseRow.vehicle.vehicleType }
         : null
-    });
+    };
   }
 
-  listCases(userId: string): CaseRecord[] {
-    this.findUser(userId);
-    return copy(this.cases.filter((item) => item.userId === userId));
+  async listCases(userId: string): Promise<CaseRecord[]> {
+    await this.requireUser(userId);
+    const rows = await this.prisma.case.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+    return rows.map(toCaseRecord);
   }
 
-  createCase(input: CaseSubmissionRequest): CaseRecord {
-    this.findUser(input.userId);
+  async createCase(input: CaseSubmissionRequest): Promise<CaseRecord> {
+    await this.requireUser(input.userId);
 
     const service = this.services.find((item) => item.serviceId === input.serviceId);
     if (!service) {
@@ -142,7 +187,7 @@ export class CoreDataService {
     }
 
     if (input.vehicleId) {
-      const vehicle = this.vehicles.find((item) => item.vehicleId === input.vehicleId);
+      const vehicle = await this.prisma.vehicle.findUnique({ where: { vehicleId: input.vehicleId } });
       if (!vehicle) {
         throw new NotFoundException(`Vehicle ${input.vehicleId} was not found.`);
       }
@@ -152,66 +197,85 @@ export class CoreDataService {
     }
 
     const createdAt = new Date().toISOString();
-    const caseRecord = createCaseFromSubmission(input, {
-      caseId: `case-${String(this.cases.length + 1).padStart(3, '0')}`,
+    const draft = createCaseFromSubmission(input, {
+      caseId: '', // assigned by the database below — Postgres, not an in-memory counter, is the single source of truth for case IDs now
       createdAt,
       slaDeadline: new Date(Date.now() + SLA_DURATION_MS).toISOString()
     });
 
-    this.cases.unshift(caseRecord);
-    return copy(caseRecord);
+    const created = await this.prisma.case.create({
+      data: {
+        type: draft.type,
+        userId: draft.userId,
+        vehicleId: draft.vehicleId ?? null,
+        serviceId: draft.serviceId,
+        stage: draft.stage,
+        status: draft.status,
+        slaDeadline: draft.slaDeadline ? new Date(draft.slaDeadline) : null,
+        submissionData: toJson(draft.submissionData),
+        stageHistory: toJson(draft.stageHistory),
+        createdAt: new Date(draft.createdAt),
+        updatedAt: new Date(draft.updatedAt)
+      }
+    });
+
+    return toCaseRecord(created);
   }
 
   /** Minimal onboarding capability: lets a citizen add a vehicle to their own account. */
-  registerVehicle(input: { ownerId: string; registrationNumber: string; vehicleType: string }): VehicleRecord {
-    this.findUser(input.ownerId);
+  async registerVehicle(input: { ownerId: string; registrationNumber: string; vehicleType: string }): Promise<VehicleRecord> {
+    await this.requireUser(input.ownerId);
 
     const registrationNumber = input.registrationNumber.trim().toUpperCase();
-    const existing = this.vehicles.find((item) => item.registrationNumber.trim().toUpperCase() === registrationNumber);
+    const existing = await this.prisma.vehicle.findUnique({ where: { registrationNumber } });
     if (existing) {
       throw new BadRequestException('A vehicle with this registration number is already on file.');
     }
 
-    const vehicle: VehicleRecord = {
-      vehicleId: `veh-${String(this.vehicles.length + 1).padStart(3, '0')}`,
-      ownerId: input.ownerId,
-      registrationNumber,
-      vehicleType: input.vehicleType.trim(),
-      documentStatus: {}
-    };
-
-    this.vehicles.push(vehicle);
-    return copy(vehicle);
+    const created = await this.prisma.vehicle.create({
+      data: {
+        ownerId: input.ownerId,
+        registrationNumber,
+        vehicleType: input.vehicleType.trim(),
+        documentStatus: toJson({})
+      }
+    });
+    return toVehicleRecord(created);
   }
 
-  escalateCase(caseId: string, requestingUserId: string): CaseRecord {
-    const caseRecord = this.cases.find((item) => item.caseId === caseId);
-    if (!caseRecord) {
+  async escalateCase(caseId: string, requestingUserId: string): Promise<CaseRecord> {
+    const caseRow = await this.prisma.case.findUnique({ where: { caseId } });
+    if (!caseRow) {
       throw new NotFoundException(`Case ${caseId} was not found.`);
     }
-    if (caseRecord.userId !== requestingUserId) {
+    if (caseRow.userId !== requestingUserId) {
       throw new ForbiddenException('This case does not belong to the requesting user.');
     }
-    if (CLOSED_CASE_STATUSES.has(caseRecord.status)) {
+    if (CLOSED_CASE_STATUSES.has(caseRow.status)) {
       throw new BadRequestException('This case is already closed and cannot be escalated.');
     }
-    if (caseRecord.stageHistory.some((entry) => entry.note === ESCALATION_NOTE)) {
+    const stageHistory = caseRow.stageHistory as unknown as StageHistoryItem[];
+    if (stageHistory.some((entry) => entry.note === ESCALATION_NOTE)) {
       throw new BadRequestException('This case has already been marked urgent.');
     }
 
     const at = new Date().toISOString();
-    caseRecord.stageHistory.push(buildEscalationStageHistoryItem(caseRecord.stage, at));
-    caseRecord.updatedAt = at;
+    const updated = await this.prisma.case.update({
+      where: { caseId },
+      data: {
+        stageHistory: toJson([...stageHistory, buildEscalationStageHistoryItem(caseRow.stage, at)]),
+        updatedAt: new Date(at)
+      }
+    });
 
-    return copy(caseRecord);
+    return toCaseRecord(updated);
   }
 
-  private findUser(userId: string): UserProfile {
-    const user = this.users.find((item) => item.userId === userId);
+  private async requireUser(userId: string): Promise<UserRow> {
+    const user = await this.prisma.user.findUnique({ where: { userId } });
     if (!user) {
       throw new NotFoundException(`User ${userId} was not found.`);
     }
-
     return user;
   }
 }
