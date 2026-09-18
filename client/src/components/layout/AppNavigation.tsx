@@ -25,6 +25,7 @@ const navigationItems: Array<{ route: AppRoute; label: string }> = [
 // to solve — these three are real, if illustrative-only, pages that were
 // previously unreachable from anywhere in the UI.
 const moreItems: Array<{ route: AppRoute; label: string }> = [
+  { route: 'documents', label: 'Documents' },
   { route: 'health', label: 'Vehicle health' },
   { route: 'pollution', label: 'Pollution' },
   { route: 'fuel', label: 'Fuel' }

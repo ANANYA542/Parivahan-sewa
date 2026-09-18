@@ -114,20 +114,21 @@ export function MyDocuments({ cases, services }: MyDocumentsProps) {
     .slice()
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  // No repeated "My Documents" eyebrow/heading here — this component now
+  // renders only on its own /documents page (the dashboard shows
+  // DocumentsSummaryCard instead), where the route's own PageHeading already
+  // carries that title and description.
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-7">
-      <p className="font-mono text-[10px] tracking-[0.16em] text-slate-500">YOUR RECORDS</p>
-      <h2 className="font-display mt-2 text-3xl text-slate-900">My Documents</h2>
-      <p className="mt-2 text-sm text-slate-500">Every service you've completed, with your generated copy ready to preview or download again.</p>
       {documents.length ? (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {documents.map((caseRecord) => {
             const service = services.find((item) => item.serviceId === caseRecord.serviceId);
             return <DocumentCard key={caseRecord.caseId} caseRecord={caseRecord} serviceName={service?.name ?? caseRecord.serviceId} />;
           })}
         </div>
       ) : (
-        <p className="mt-6 text-sm text-slate-400">Complete a guided service to see your copy appear here.</p>
+        <p className="text-sm text-slate-400">Complete a guided service to see your copy appear here.</p>
       )}
     </section>
   );

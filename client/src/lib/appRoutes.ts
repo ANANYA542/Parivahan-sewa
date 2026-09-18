@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export const appRoutes = ['dashboard', 'services', 'journey', 'cases', 'map', 'alerts', 'health', 'pollution', 'fuel'] as const;
+export const appRoutes = ['dashboard', 'services', 'journey', 'cases', 'map', 'alerts', 'health', 'pollution', 'fuel', 'documents'] as const;
 
 export type AppRoute = (typeof appRoutes)[number];
 

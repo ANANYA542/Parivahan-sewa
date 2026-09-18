@@ -22,6 +22,9 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { FloatingVoiceAssistant } from './components/voice/FloatingVoiceAssistant';
 import { MyVahanDashboard } from './components/dashboard/MyVahanDashboard';
 import { MyDocuments } from './components/dashboard/MyDocuments';
+import { DocumentsSummaryCard } from './components/dashboard/DocumentsSummaryCard';
+import { PollutionWidget } from './components/dashboard/PollutionWidget';
+import { FuelWidget } from './components/dashboard/FuelWidget';
 import { IntentAssistant } from './components/intent/IntentAssistant';
 import { GuidedNavigator } from './components/navigator/GuidedNavigator';
 import { JourneyPreview } from './components/navigator/JourneyPreview';
@@ -60,7 +63,8 @@ const pageCopy: Record<AppRoute, { title: string; description: string }> = {
   alerts: { title: 'Keep the next action visible.', description: 'Review document reminders and case updates, then act on the relevant service.' },
   health: { title: 'Vehicle health score.', description: 'A rule-based read on your vehicle’s compliance posture, not a diagnostic sensor feed.' },
   pollution: { title: 'Pollution tracker.', description: 'Illustrative reference data around emissions and PUC status — not a live air-quality feed.' },
-  fuel: { title: 'Fuel consumption.', description: 'An illustrative estimate, not a measured reading. Coming soon in a future update.' }
+  fuel: { title: 'Fuel consumption.', description: 'An illustrative estimate, not a measured reading. Coming soon in a future update.' },
+  documents: { title: 'Your documents.', description: 'Every service you’ve completed, with your generated copy ready to preview or download again.' }
 };
 
 function PageHeading({ route }: { route: AppRoute }) {
@@ -391,9 +395,13 @@ export default function App() {
                 <MyVahanDashboard identity={identity} />
                 <MobilityScoreCard snapshot={mobilityIntelligence} />
               </div>
+              <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <PollutionWidget identity={identity} onRenewPuc={() => openServiceJourney('svc-renew-puc')} />
+                <FuelWidget identity={identity} />
+              </div>
               {identity ? (
                 <div className="mt-7">
-                  <MyDocuments cases={identity.cases} services={services} />
+                  <DocumentsSummaryCard cases={identity.cases} services={services} onViewAll={() => navigateTo('documents')} />
                 </div>
               ) : null}
             </>
@@ -491,6 +499,13 @@ export default function App() {
           <>
             <PageHeading route={route} />
             <FuelConsumptionView identity={identity} />
+          </>
+        );
+      case 'documents':
+        return (
+          <>
+            <PageHeading route={route} />
+            <div className="mt-7"><MyDocuments cases={identity?.cases ?? []} services={services} /></div>
           </>
         );
     }
