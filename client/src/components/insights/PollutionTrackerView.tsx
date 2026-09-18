@@ -1,3 +1,4 @@
+import { CloudFog } from 'lucide-react';
 import type { IdentityBundle, MobilityIntelligenceSnapshot } from '@parivahan/shared';
 import { documentStatusStyle } from '../../lib/documentStatus';
 
@@ -20,7 +21,9 @@ export function PollutionTrackerView({ identity, mobilityIntelligence, onRenewPu
   if (identity && vehicles.length === 0) {
     return (
       <div className="mt-7 flex flex-col items-center rounded-2xl border border-dashed border-slate-800 px-6 py-16 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-xl" aria-hidden="true">🌫️</span>
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800">
+          <CloudFog className="h-6 w-6 text-aurora-blue" aria-hidden="true" />
+        </span>
         <p className="mt-4 text-sm font-medium text-slate-300">No linked vehicle yet.</p>
         <p className="mt-1 max-w-sm text-sm leading-6 text-slate-400">Link a vehicle to see its PUC status here.</p>
       </div>
@@ -46,7 +49,7 @@ export function PollutionTrackerView({ identity, mobilityIntelligence, onRenewPu
             <div className="flex items-center gap-3">
               <span className={`rounded-full px-3 py-1 text-xs font-medium ${style.badge}`}>PUC: {style.label}</span>
               {needsRenewal ? (
-                <button type="button" onClick={onRenewPuc} className="rounded-xl bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300">
+                <button type="button" onClick={onRenewPuc} className="rounded-xl bg-aurora-blue px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift">
                   Renew PUC
                 </button>
               ) : null}

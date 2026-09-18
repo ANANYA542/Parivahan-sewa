@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Mic, Volume2 } from 'lucide-react';
 import type { AgentMessage, ComplianceSnapshot } from '@parivahan/shared';
 import { askStandingAgent, getComplianceSnapshot } from '../../lib/api';
 import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
@@ -79,12 +80,12 @@ export function StandingAgentPanel({ userId, onIntentFromVoice }: StandingAgentP
   }
 
   return (
-    <section aria-labelledby="standing-agent-title" className="overflow-hidden rounded-3xl border border-amber-500/30 bg-slate-900 shadow-sm">
+    <section aria-labelledby="standing-agent-title" className="overflow-hidden rounded-3xl border border-aurora-blue/30 bg-slate-900 shadow-sm">
       <button
         type="button"
         onClick={() => setIsExpanded((expanded) => !expanded)}
         aria-expanded={isExpanded}
-        className="flex w-full items-center justify-between gap-4 border-b border-slate-800 bg-amber-500/10 px-4 py-4 text-left sm:px-6 sm:py-5"
+        className="flex w-full items-center justify-between gap-4 border-b border-slate-800 bg-aurora-blue/10 px-4 py-4 text-left sm:px-6 sm:py-5"
       >
         <div>
           <h2 id="standing-agent-title" className="text-lg font-semibold text-slate-50 sm:text-xl">Ask AI</h2>
@@ -100,7 +101,7 @@ export function StandingAgentPanel({ userId, onIntentFromVoice }: StandingAgentP
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
-          className={`shrink-0 text-amber-300 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          className={`shrink-0 text-cyan-300 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
         >
           <path d="m6 9 6 6 6-6" />
         </svg>
@@ -111,28 +112,30 @@ export function StandingAgentPanel({ userId, onIntentFromVoice }: StandingAgentP
             <div className="p-4 sm:p-6">
               <div aria-live="polite" className="min-h-40 space-y-3">
                 {messages.length === 0 ? <p className="max-w-xl text-sm leading-6 text-slate-400">Ask about a case, document status, a safe next action, or how to raise an escalation.</p> : messages.map((message, index) => (
-                  <motion.div key={`${message.role}-${index}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: DURATION.fast, ease: EASE_OUT }} className={message.role === 'user' ? 'ml-auto max-w-xl rounded-2xl bg-amber-400 px-4 py-3 text-sm text-slate-950' : 'flex max-w-xl items-start gap-2 rounded-2xl border border-slate-800 bg-slate-800 px-4 py-3 text-sm leading-6 text-slate-300'}>
+                  <motion.div key={`${message.role}-${index}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: DURATION.fast, ease: EASE_OUT }} className={message.role === 'user' ? 'ml-auto max-w-xl rounded-2xl bg-aurora-blue px-4 py-3 text-sm text-white' : 'flex max-w-xl items-start gap-2 rounded-2xl border border-slate-800 bg-slate-800 px-4 py-3 text-sm leading-6 text-slate-300'}>
                     {message.role === 'assistant' ? (
                       <>
                         <span className="min-w-0 flex-1">{message.content}</span>
-                        <motion.button {...scaleTap} type="button" onClick={() => speak(message.content)} title="Read aloud" aria-label="Read this reply aloud" className="shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-300 hover:border-amber-500/40">🔊</motion.button>
+                        <motion.button {...scaleTap} type="button" onClick={() => speak(message.content)} title="Read aloud" aria-label="Read this reply aloud" className="shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-300 hover:border-aurora-blue/40">
+                          <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        </motion.button>
                       </>
                     ) : message.content}
                   </motion.div>
                 ))}
-                {isSending ? <p className="text-sm text-amber-300">Reviewing the available records…</p> : null}
+                {isSending ? <p className="text-sm text-cyan-300">Reviewing the available records…</p> : null}
               </div>
               <div className="mt-5 flex flex-col gap-2 border-t border-slate-800 pt-5 sm:flex-row">
-                <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void send(); }} placeholder="Ask for guidance, or speak your question" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 outline-none placeholder:text-slate-500 focus:border-amber-400" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void send(); }} placeholder="Ask for guidance, or speak your question" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 outline-none placeholder:text-slate-500 focus:border-aurora-blue" />
                 <div className="flex gap-2">
-                  <motion.button {...scaleTap} type="button" onClick={() => void voice.toggle()} aria-pressed={voice.isListening} className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium sm:flex-none ${voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-amber-500/40'}`}>{voice.isListening ? 'Stop' : '🎙 Speak'}</motion.button>
-                  <motion.button {...scaleTap} type="button" disabled={!query.trim() || isSending} onClick={() => void send()} className="flex-1 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:opacity-50 sm:flex-none">Send</motion.button>
+                  <motion.button {...scaleTap} type="button" onClick={() => void voice.toggle()} aria-pressed={voice.isListening} className={`flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium sm:flex-none ${voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-aurora-blue/40'} flex`}>{voice.isListening ? 'Stop' : <><Mic className="h-4 w-4" aria-hidden="true" /> Speak</>}</motion.button>
+                  <motion.button {...scaleTap} type="button" disabled={!query.trim() || isSending} onClick={() => void send()} className="flex-1 rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:opacity-40 sm:flex-none">Send</motion.button>
                 </div>
               </div>
             </div>
             <aside className="border-t border-slate-800 bg-slate-800 p-4 sm:p-6 lg:border-l lg:border-t-0">
               <h3 className="text-sm font-semibold text-slate-50">Safety record</h3>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-amber-300">{compliance?.pointsLedger.activePoints ?? '—'} <span className="text-sm font-medium text-slate-400">illustrative points</span></p>
+              <p className="mt-2 text-3xl font-semibold tabular-nums text-cyan-300">{compliance?.pointsLedger.activePoints ?? '—'} <span className="text-sm font-medium text-slate-400">illustrative points</span></p>
               <p className="mt-3 text-sm leading-6 text-slate-400">{compliance?.pointsLedger.disclaimer ?? 'Loading your safety ledger…'}</p>
               <div className="mt-5 space-y-3 border-t border-slate-700 pt-5">
                 {compliance?.scamSignals.map((signal) => <div key={signal.signalId}><p className="text-sm font-medium text-slate-300">{signal.title}</p><p className="mt-1 text-sm leading-5 text-slate-400">{signal.guidance}</p></div>)}

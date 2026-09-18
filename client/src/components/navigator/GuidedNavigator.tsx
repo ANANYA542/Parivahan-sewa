@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { MapPin, Mic } from 'lucide-react';
 import type { CaseRecord, ServiceDefinition, SubmissionData, VehicleRecord } from '@parivahan/shared';
 import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
 import { useVoiceCapture } from '../../lib/useVoiceCapture';
+import { caseReference } from '../../lib/caseReference';
 
 interface GuidedNavigatorProps {
   service: ServiceDefinition | null;
@@ -102,7 +104,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
             href={service.officialUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-5 inline-flex rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300"
+            className="mt-5 inline-flex rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift"
           >
             Open official service
           </motion.a>
@@ -143,7 +145,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
     try {
       const input = { serviceId: activeService.serviceId, submissionData };
       const caseRecord = await onSubmit(values.vehicleId ? { ...input, vehicleId: values.vehicleId } : input);
-      setMessage(`Submitted successfully. Case ${caseRecord.caseId} is now being tracked.`);
+      setMessage(`Submitted successfully. Case ${caseReference(caseRecord.caseId)} is now being tracked.`);
       setSubmittedCaseId(caseRecord.caseId);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to submit this journey.');
@@ -158,7 +160,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
           <h2 className="font-display mt-2 text-3xl text-slate-50">{activeService.name}</h2>
           <p className="mt-2 text-sm text-slate-400">{activeService.name} · step {currentStepIndex + 1} of {activeService.steps.length}</p>
         </div>
-        <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium capitalize text-amber-300">{activeService.category.replace(/-/g, ' ')}</span>
+        <span className="rounded-full bg-aurora-magenta/10 px-3 py-1 text-xs font-medium capitalize text-aurora-magenta">{activeService.category.replace(/-/g, ' ')}</span>
       </div>
 
       <div
@@ -173,10 +175,10 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
               key={step.id}
               type="button"
               onClick={() => index <= currentStepIndex && goToStep(index)}
-              className={`relative min-w-max rounded-full px-3 py-1 text-xs transition-colors duration-200 ${isActive ? 'text-slate-950' : isDone ? 'text-emerald-300' : 'text-slate-300'}`}
+              className={`relative min-w-max rounded-full px-3 py-1 text-xs transition-colors duration-200 ${isActive ? 'text-white' : isDone ? 'text-emerald-300' : 'text-slate-300'}`}
             >
               {isActive ? (
-                <motion.span layoutId="step-pill-active" className="absolute inset-0 rounded-full bg-amber-400" transition={{ duration: DURATION.base, ease: EASE_OUT }} />
+                <motion.span layoutId="step-pill-active" className="absolute inset-0 rounded-full bg-aurora-blue" transition={{ duration: DURATION.base, ease: EASE_OUT }} />
               ) : isDone ? (
                 <span className="absolute inset-0 rounded-full bg-emerald-500/10" />
               ) : (
@@ -215,14 +217,14 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                   if (field === 'vehicleId') {
                     if (vehicles.length === 0) {
                       return (
-                        <div key={field} className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-                          <p className="text-sm font-medium text-amber-300">You don&apos;t have a linked vehicle yet</p>
+                        <div key={field} className="rounded-xl border border-aurora-blue/30 bg-aurora-blue/10 p-4">
+                          <p className="text-sm font-medium text-cyan-300">You don&apos;t have a linked vehicle yet</p>
                           <p className="mt-1 text-sm leading-6 text-slate-300">Add one so this checkpoint can prefill it — it only takes a moment, and this journey will be waiting for you when you're back.</p>
                           {onAddVehicle ? (
                             <button
                               type="button"
                               onClick={onAddVehicle}
-                              className="mt-3 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300"
+                              className="mt-3 rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift"
                             >
                               Add a vehicle
                             </button>
@@ -233,7 +235,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                     return (
                       <label key={field} className="block text-sm text-slate-300">
                         Select vehicle
-                        <select value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 focus:border-amber-400">
+                        <select value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 focus:border-aurora-blue">
                           <option value="">Choose a linked vehicle</option>
                           {vehicles.map((vehicle) => <option key={vehicle.vehicleId} value={vehicle.vehicleId}>{vehicle.registrationNumber} · {vehicle.vehicleType}</option>)}
                         </select>
@@ -244,7 +246,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                   if (isConfirmation) {
                     return (
                       <label key={field} className="flex cursor-pointer items-start gap-3 text-sm text-slate-300">
-                        <input type="checkbox" checked={values[field] === 'true'} onChange={(event) => setField(field, String(event.target.checked))} className="mt-1 h-4 w-4 accent-amber-400" />
+                        <input type="checkbox" checked={values[field] === 'true'} onChange={(event) => setField(field, String(event.target.checked))} className="mt-1 h-4 w-4 accent-aurora-blue" />
                         <span>I confirm that the information provided is accurate.</span>
                       </label>
                     );
@@ -265,7 +267,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                                 type="button"
                                 aria-pressed={isSelected}
                                 onClick={() => setField(field, option)}
-                                className={`rounded-full border px-3 py-1.5 text-sm transition-colors duration-150 ${isSelected ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-amber-500/30'}`}
+                                className={`rounded-full border px-3 py-1.5 text-sm transition-colors duration-150 ${isSelected ? 'border-aurora-blue/30 bg-aurora-blue/10 text-cyan-300' : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-aurora-blue/40'}`}
                               >
                                 {option}
                               </motion.button>
@@ -282,7 +284,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                     <label key={field} className="block text-sm text-slate-300">
                       {formatField(field)}
                       <div className="mt-2 flex gap-2">
-                        <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={field === 'attachments' ? 'Comma-separated file names' : `Enter ${formatField(field).toLowerCase()}`} className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-amber-400" />
+                        <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={field === 'attachments' ? 'Comma-separated file names' : `Enter ${formatField(field).toLowerCase()}`} className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-aurora-blue" />
                         {canDictate ? (
                           <motion.button
                             {...scaleTap}
@@ -292,9 +294,9 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                               setVoiceField(field);
                               void voice.toggle();
                             }}
-                            className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-medium transition-colors duration-150 ${isVoiceActiveHere && voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-amber-500/30'}`}
+                            className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-medium transition-colors duration-150 ${isVoiceActiveHere && voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-aurora-blue/40'}`}
                           >
-                            {isVoiceActiveHere && voice.isListening ? 'Stop' : isVoiceActiveHere && voice.isTranscribing ? '…' : '🎙'}
+                            {isVoiceActiveHere && voice.isListening ? 'Stop' : isVoiceActiveHere && voice.isTranscribing ? '…' : <Mic className="h-4 w-4" aria-hidden="true" />}
                           </motion.button>
                         ) : null}
                         {field === 'location' ? (
@@ -303,13 +305,18 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                             type="button"
                             disabled={isLocating}
                             onClick={() => useMyLocation(field)}
-                            className="shrink-0 rounded-xl border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:border-amber-500/30 disabled:opacity-50"
+                            className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:border-aurora-blue/40 disabled:opacity-50"
                           >
-                            {isLocating ? '…' : '📍 Use my location'}
+                            {isLocating ? '…' : (
+                              <>
+                                <MapPin className="h-4 w-4" aria-hidden="true" />
+                                Use my location
+                              </>
+                            )}
                           </motion.button>
                         ) : null}
                       </div>
-                      {isVoiceActiveHere && voice.isTranscribing ? <p className="mt-1.5 text-xs text-amber-400">Transcribing what you said…</p> : null}
+                      {isVoiceActiveHere && voice.isTranscribing ? <p className="mt-1.5 text-xs text-cyan-300">Transcribing what you said…</p> : null}
                     </label>
                   );
                 })}
@@ -328,29 +335,40 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
           type="button"
           onClick={() => goToStep(Math.max(0, currentStepIndex - 1))}
           disabled={currentStepIndex === 0 || isSubmitting}
-          className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition-colors duration-150 hover:border-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition-colors duration-150 hover:border-aurora-blue/40 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Back
         </button>
         {isLastStep ? (
-          <button type="button" onClick={() => void submit()} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={() => void submit()} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-40">
             {isSubmitting ? 'Submitting...' : 'Submit case'}
           </button>
         ) : (
-          <button type="button" onClick={() => goToStep(Math.min(activeService.steps.length - 1, currentStepIndex + 1))} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" onClick={() => goToStep(Math.min(activeService.steps.length - 1, currentStepIndex + 1))} disabled={!currentStepComplete || isSubmitting} className="rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-40">
             Continue
           </button>
         )}
       </div>
       <AnimatePresence>
         {message ? (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-            <p className="text-sm text-emerald-300">{message}</p>
-            {submittedCaseId && onViewCase ? (
-              <button type="button" onClick={() => onViewCase(submittedCaseId)} className="mt-3 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300">
-                View &amp; download this case -&gt;
-              </button>
-            ) : null}
+          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.1 }}
+              className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-xs font-bold text-slate-950"
+              aria-hidden="true"
+            >
+              ✓
+            </motion.span>
+            <div>
+              <p className="text-sm text-emerald-300">{message}</p>
+              {submittedCaseId && onViewCase ? (
+                <button type="button" onClick={() => onViewCase(submittedCaseId)} className="mt-3 rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift">
+                  View &amp; download this case -&gt;
+                </button>
+              ) : null}
+            </div>
           </motion.div>
         ) : null}
         {error ? <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-4 text-sm text-rose-300">{error}</motion.p> : null}

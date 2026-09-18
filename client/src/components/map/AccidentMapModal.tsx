@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { MapPin } from 'lucide-react';
 import type { MobilityMapLayer } from '@parivahan/shared';
 import { scaleTap } from '../../lib/motion';
 import { SmartMobilityMap } from './SmartMobilityMap';
@@ -66,10 +67,10 @@ export function AccidentMapModal({ layers, onStartGuidedReport }: AccidentReport
             unclickable. Grid tracks can't collapse below an explicit min-height,
             which removes the possibility regardless of render timing. */}
         <div className="grid min-h-[2.75rem] grid-cols-1 gap-3 sm:grid-cols-2">
-          <motion.button {...scaleTap} type="button" disabled={isLocating} onClick={detectLocation} className="min-h-[2.75rem] rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:opacity-60">
-            {isLocating ? 'Detecting…' : '📍 Auto-detect location'}
+          <motion.button {...scaleTap} type="button" disabled={isLocating} onClick={detectLocation} className="flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl bg-aurora-blue px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-40">
+            {isLocating ? 'Detecting…' : <><MapPin className="h-4 w-4" aria-hidden="true" /> Auto-detect location</>}
           </motion.button>
-          <motion.button {...scaleTap} type="button" onClick={() => onStartGuidedReport(locatedAt)} className="min-h-[2.75rem] rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors duration-150 hover:border-amber-500/30">
+          <motion.button {...scaleTap} type="button" onClick={() => onStartGuidedReport(locatedAt)} className="min-h-[2.75rem] rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors duration-200 hover:border-aurora-blue/40">
             Start guided reporting
           </motion.button>
         </div>

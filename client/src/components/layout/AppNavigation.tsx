@@ -81,15 +81,11 @@ export function AppNavigation({ activeRoute, userName, unreadCount, onNavigate, 
           overflow-hidden) — that was silently clipping the "More" dropdown
           panel below, since overflow-hidden on the header clips everything
           inside it, not just this bar. */}
-      <div className="flex h-[3px] w-full overflow-hidden rounded-t-2xl" aria-hidden="true">
-        <span className="flex-1 bg-amber-400" />
-        <span className="flex-1 bg-slate-800" />
-        <span className="flex-1 bg-emerald-400" />
-      </div>
+      <div className="flex h-[3px] w-full overflow-hidden rounded-t-2xl bg-aurora-text bg-[length:200%_auto] animate-aurora-drift" aria-hidden="true" />
       <div className="px-3 py-3 md:px-4">
         <div className="flex items-center justify-between gap-4">
           <button type="button" onClick={() => onNavigate('dashboard')} className="flex shrink-0 items-center gap-2.5 text-left">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-sm font-black text-slate-950">P</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-aurora-blue text-sm font-black text-white shadow-lift">P</span>
             <span className="font-display text-lg font-semibold leading-none text-slate-50">Parivahan Journey</span>
           </button>
           {/* Signed out: this is now the ONLY header/sign-in entry point (LoginScreen's
@@ -100,10 +96,10 @@ export function AppNavigation({ activeRoute, userName, unreadCount, onNavigate, 
             {userName ? (
               <>
                 <span className="max-w-40 truncate text-sm text-slate-400">{userName}</span>
-                <motion.button {...scaleTap} type="button" onClick={onSignOut} className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 transition-colors duration-150 hover:border-slate-600 hover:text-slate-50">Sign out</motion.button>
+                <motion.button {...scaleTap} type="button" onClick={onSignOut} className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 transition-colors duration-200 hover:border-aurora-blue/50 hover:text-slate-50">Sign out</motion.button>
               </>
             ) : (
-              <motion.button {...scaleTap} type="button" onClick={() => onNavigate('dashboard')} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 transition-colors duration-150 hover:bg-amber-300">Sign in</motion.button>
+              <motion.button {...scaleTap} type="button" onClick={() => onNavigate('dashboard')} className="rounded-xl bg-aurora-blue px-3 py-2 text-xs font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift">Sign in</motion.button>
             )}
           </div>
         </div>
@@ -129,12 +125,12 @@ export function AppNavigation({ activeRoute, userName, unreadCount, onNavigate, 
                       type="button"
                       onClick={() => onNavigate(item.route)}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`relative shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${isActive ? 'text-amber-300' : 'text-slate-400 hover:text-slate-100'}`}
+                      className={`relative shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ${isActive ? 'text-cyan-300' : 'text-slate-400 hover:text-slate-100'}`}
                     >
-                      {isActive ? <motion.span layoutId="active-route" className="absolute inset-0 rounded-lg bg-amber-500/15" transition={{ duration: DURATION.fast, ease: EASE_OUT }} /> : null}
+                      {isActive ? <motion.span layoutId="active-route" className="absolute inset-0 rounded-lg bg-aurora-blue/15" transition={{ duration: DURATION.fast, ease: EASE_OUT }} /> : null}
                       <span className="relative inline-flex items-center gap-1.5">
                         {item.label}
-                        {hasUnread ? <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-label={`${unreadCount} unread alerts`} /> : null}
+                        {hasUnread ? <span className="h-1.5 w-1.5 rounded-full bg-[#FF1493]" aria-label={`${unreadCount} unread alerts`} /> : null}
                       </span>
                     </button>
                   );
@@ -164,7 +160,7 @@ export function AppNavigation({ activeRoute, userName, unreadCount, onNavigate, 
                 onClick={() => setIsMoreOpen((open) => !open)}
                 aria-expanded={isMoreOpen}
                 aria-haspopup="menu"
-                className={`relative shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${moreItems.some((item) => item.route === activeRoute) ? 'text-amber-300' : 'text-slate-400 hover:text-slate-100'}`}
+                className={`relative shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ${moreItems.some((item) => item.route === activeRoute) ? 'text-cyan-300' : 'text-slate-400 hover:text-slate-100'}`}
               >
                 More
               </button>
@@ -185,7 +181,7 @@ export function AppNavigation({ activeRoute, userName, unreadCount, onNavigate, 
                         onNavigate(item.route);
                         setIsMoreOpen(false);
                       }}
-                      className={`block w-full rounded-lg px-3 py-2 text-left text-sm ${item.route === activeRoute ? 'text-amber-300' : 'text-slate-300 hover:bg-slate-800 hover:text-slate-50'}`}
+                      className={`block w-full rounded-lg px-3 py-2 text-left text-sm ${item.route === activeRoute ? 'text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-slate-50'}`}
                     >
                       {item.label}
                     </button>

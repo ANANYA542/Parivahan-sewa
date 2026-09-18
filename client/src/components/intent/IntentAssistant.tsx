@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Mic } from 'lucide-react';
 import type { IntentResolution } from '@parivahan/shared';
 import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
 import { useVoiceCapture } from '../../lib/useVoiceCapture';
@@ -40,12 +41,12 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
   }
 
   return (
-    <section id="journey-guide" className="scroll-mt-5 rounded-[2rem] border border-amber-500/30 bg-slate-900 p-6 shadow-sm md:p-7">
-      <p className="font-mono text-[10px] tracking-[0.16em] text-amber-300">JOURNEY GUIDE</p>
+    <section id="journey-guide" className="scroll-mt-5 rounded-[2rem] border border-aurora-blue/30 bg-slate-900 p-6 shadow-sm md:p-7">
+      <p className="font-mono text-[10px] tracking-[0.16em] text-aurora-magenta">JOURNEY GUIDE</p>
       <h2 className="font-display mt-2 text-3xl text-slate-50">Tell us what brought you here.</h2>
       <p className="mt-2 text-sm leading-6 text-slate-400">Use ordinary language. The guide maps your situation to the right service journey.</p>
-      <div className="mt-5 rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/10 p-4">
-        <label className="text-sm font-medium text-amber-400" htmlFor="intent-query">What do you need help with?</label>
+      <div className="mt-5 rounded-2xl border border-dashed border-aurora-blue/30 bg-aurora-blue/10 p-4">
+        <label className="text-sm font-medium text-cyan-300" htmlFor="intent-query">What do you need help with?</label>
         <div className="mt-3 flex gap-2">
           <input
             id="intent-query"
@@ -55,7 +56,7 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
               if (event.key === 'Enter') void submitIntent();
             }}
             placeholder="For example, my PUC has expired"
-            className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-amber-400"
+            className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-aurora-blue"
           />
           <motion.button
             {...scaleTap}
@@ -64,9 +65,9 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
             aria-pressed={voice.isListening}
             title="Speak your question instead of typing"
             aria-label="Speak your question instead of typing"
-            className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-medium transition-colors duration-150 ${voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-amber-500/30'}`}
+            className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-medium transition-colors duration-150 ${voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-aurora-blue/40'}`}
           >
-            {voice.isListening ? 'Stop' : voice.isTranscribing ? '…' : '🎙'}
+            {voice.isListening ? 'Stop' : voice.isTranscribing ? '…' : <Mic className="h-4 w-4" aria-hidden="true" />}
           </motion.button>
           {/* Plain text here, not AnimatePresence mode="wait", for the same
               reason as the App.tsx / GuidedNavigator.tsx fixes — this label
@@ -77,15 +78,15 @@ export function IntentAssistant({ onResolve }: IntentAssistantProps) {
             type="button"
             onClick={() => void submitIntent()}
             disabled={isResolving || !query.trim()}
-            className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isResolving ? 'Finding...' : 'Continue'}
           </motion.button>
         </div>
-        {voice.isTranscribing ? <p className="mt-1.5 text-xs text-amber-400">Transcribing what you said…</p> : null}
+        {voice.isTranscribing ? <p className="mt-1.5 text-xs text-cyan-300">Transcribing what you said…</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">
           {suggestions.map((item) => (
-            <motion.button {...scaleTap} key={item} type="button" onClick={() => void submitIntent(item)} className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1 text-sm text-slate-300 transition-colors duration-200 hover:border-amber-500/30">
+            <motion.button {...scaleTap} key={item} type="button" onClick={() => void submitIntent(item)} className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1 text-sm text-slate-300 transition-colors duration-200 hover:border-aurora-blue/40">
               {item}
             </motion.button>
           ))}

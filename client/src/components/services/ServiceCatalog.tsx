@@ -74,7 +74,7 @@ export function ServiceCatalog({ services, selectedServiceId, onSelect }: Servic
     <section id="service-directory" className="scroll-mt-5 rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-mono text-[10px] tracking-[0.16em] text-amber-400">SERVICE DISCOVERY</p>
+          <p className="font-mono text-[10px] tracking-[0.16em] text-aurora-magenta">SERVICE DISCOVERY</p>
           <h2 className="font-display mt-2 text-3xl text-slate-50">Choose the road you are on.</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Start broad, then enter the service that matches your task. Guided services stay in this experience; other services clearly hand off to their official portal.</p>
         </div>
@@ -86,16 +86,17 @@ export function ServiceCatalog({ services, selectedServiceId, onSelect }: Servic
             {categories.map((category, index) => {
               const isActive = category === currentCategory;
               return (
-                <button
+                <motion.button
+                  {...scaleTap}
                   key={category}
                   type="button"
                   aria-pressed={isActive}
                   onClick={() => setActiveCategory(category)}
-                  className={`group flex min-w-48 shrink-0 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors duration-200 lg:min-w-0 lg:shrink ${isActive ? 'border-amber-500/30 bg-amber-500/10' : 'border-slate-800 bg-slate-900 hover:border-slate-700 hover:bg-slate-800'}`}
+                  className={`group flex min-w-48 shrink-0 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors duration-200 lg:min-w-0 lg:shrink ${isActive ? 'border-aurora-blue/30 bg-aurora-blue/10' : 'border-slate-800 bg-slate-900 hover:border-slate-700 hover:bg-slate-800'}`}
                 >
-                  <span className={`font-mono flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] ${isActive ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>{String(index + 1).padStart(2, '0')}</span>
+                  <span className={`font-mono flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] ${isActive ? 'bg-aurora-blue text-white' : 'bg-slate-800 text-slate-400'}`}>{String(index + 1).padStart(2, '0')}</span>
                   <span className={`whitespace-nowrap text-sm font-medium lg:whitespace-normal ${isActive ? 'text-slate-50' : 'text-slate-300'}`}>{formatCategory(category)}</span>
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -142,14 +143,14 @@ export function ServiceCatalog({ services, selectedServiceId, onSelect }: Servic
                     {...scaleTap}
                     type="button"
                     onClick={() => onSelect(service.serviceId)}
-                    className={`group rounded-2xl border p-4 text-left transition-colors duration-200 ${selectedServiceId === service.serviceId ? 'border-amber-500/30 bg-amber-500/10' : 'border-slate-700 bg-slate-900 hover:border-amber-500/20 hover:bg-amber-500/5'}`}
+                    className={`group rounded-2xl border p-4 text-left transition-colors duration-200 ${selectedServiceId === service.serviceId ? 'border-aurora-blue/30 bg-aurora-blue/10' : 'border-slate-700 bg-slate-900 hover:border-aurora-blue/20 hover:bg-aurora-blue/5'}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="font-medium leading-5 text-slate-50">{service.name}</span>
                       <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-medium tracking-wide ${service.delivery === 'guided' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>{service.delivery === 'guided' ? 'Guided here' : 'Official portal'}</span>
                     </div>
                     <p className="mt-2 text-sm leading-5 text-slate-400">{service.description}</p>
-                    <span className="mt-4 inline-flex text-xs font-semibold text-amber-300 transition-transform duration-200 group-hover:translate-x-0.5">{selectedServiceId === service.serviceId ? 'Journey selected' : 'Open this journey'} <span aria-hidden="true" className="ml-1">-&gt;</span></span>
+                    <span className="mt-4 inline-flex text-xs font-semibold text-cyan-300 transition-transform duration-200 group-hover:translate-x-0.5">{selectedServiceId === service.serviceId ? 'Journey selected' : 'Open this journey'} <span aria-hidden="true" className="ml-1">-&gt;</span></span>
                   </motion.button>
                 ))}
               </motion.div>

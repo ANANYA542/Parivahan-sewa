@@ -39,7 +39,7 @@ export function SmartMobilityMap({ layers }: SmartMobilityMapProps) {
       <p className="mt-2 text-sm leading-6 text-slate-400">Case-history and reference overlays are independently toggleable. This is decision support, not a live traffic or sensor feed.</p>
       <div className="mt-5 flex flex-wrap gap-2">
         {layers.map((layer) => (
-          <motion.button {...scaleTap} key={layer.layerId} type="button" aria-pressed={visibleLayers.has(layer.layerId)} onClick={() => toggleLayer(layer.layerId)} className={`rounded-full border px-3 py-1 text-xs transition-colors duration-200 ${visibleLayers.has(layer.layerId) ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-slate-800 text-slate-500 opacity-60 hover:opacity-100'}`}>
+          <motion.button {...scaleTap} key={layer.layerId} type="button" aria-pressed={visibleLayers.has(layer.layerId)} onClick={() => toggleLayer(layer.layerId)} className={`rounded-full border px-3 py-1 text-xs transition-colors duration-200 ${visibleLayers.has(layer.layerId) ? 'border-aurora-blue/40 bg-aurora-blue/10 text-cyan-300' : 'border-slate-800 text-slate-500 opacity-60 hover:opacity-100'}`}>
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: layer.color }} />
             {layer.label}
           </motion.button>

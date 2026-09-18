@@ -108,7 +108,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
   }
 
   return (
-    <div className="min-h-screen w-full px-4 py-5 md:px-8 md:py-7">
+    <div className="min-h-[100dvh] w-full px-4 py-5 md:px-8 md:py-7">
       <motion.div
         variants={staggerContainer}
         initial="hidden"
@@ -121,20 +121,21 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             directly beneath it, which read as a duplicated, redundant header
             on the very first screen a visitor sees. */}
         <div className="mt-2 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.18fr)_minmax(25rem,0.82fr)] lg:items-stretch">
-          <motion.section variants={fadeUp} className="relative overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-9">
+          <motion.section variants={fadeUp} className="aurora-mesh-bg relative overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-9">
             <div className="relative">
-              <span className="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-300">A simpler way to move through mobility services</span>
-              <h1 className="font-display mt-6 max-w-2xl text-4xl leading-[1.02] tracking-tight text-slate-50 md:text-6xl">Every transport task starts with one clear next turn.</h1>
+              <span className="inline-flex rounded-full border border-aurora-blue/30 bg-aurora-blue/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-cyan-300">A simpler way to move through mobility services</span>
+              <h1 className="font-display mt-6 max-w-2xl text-4xl leading-[1.02] tracking-tight text-slate-50 md:text-6xl">Every transport task starts with <span className="aurora-text">one clear next turn</span>.</h1>
               <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">Explore services as a connected journey. Tell the guide what you need, follow the relevant checkpoints, and keep track of what happens next.</p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <button
+                <motion.button
+                  {...scaleTap}
                   type="button"
                   onClick={onOpenAssistant}
-                  className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-300"
+                  className="rounded-xl bg-aurora-blue px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift"
                 >
                   Ask AI for a route
-                </button>
-                <a href="#account-entry" className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-800">Login or sign up</a>
+                </motion.button>
+                <a href="#account-entry" className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors duration-200 hover:border-aurora-blue/40 hover:bg-slate-800">Login or sign up</a>
               </div>
             </div>
 
@@ -152,18 +153,18 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                 ['2', 'Follow clear steps', 'See only what the current checkpoint needs.'],
                 ['3', 'Track the outcome', 'Keep applications and next actions together.']
               ].map(([number, heading, detail]) => (
-                <div key={number} className="rounded-2xl border border-slate-800 bg-slate-800 p-4">
-                  <span className="font-mono text-xs text-amber-400">0{number}</span>
+                <motion.div key={number} whileHover={{ scale: 1.03 }} transition={{ duration: 0.2 }} className="rounded-2xl border border-slate-800 bg-slate-800 p-4 transition-colors duration-200 hover:border-aurora-blue/30">
+                  <span className="font-mono text-xs text-aurora-magenta">0{number}</span>
                   <p className="mt-3 text-sm font-semibold text-slate-50">{heading}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-400">{detail}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </motion.section>
 
           <motion.section id="account-entry" variants={fadeUp} className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-sm md:p-8">
         <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-300">Citizen entry</span>
+          <span className="inline-flex rounded-full border border-aurora-blue/30 bg-aurora-blue/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-cyan-300">Citizen entry</span>
           <span className="font-mono text-[10px] text-slate-400">SYNTHETIC DEMO</span>
         </div>
 
@@ -179,7 +180,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             }}
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
               mode === 'signup'
-                ? 'bg-amber-400 text-slate-950 shadow-sm'
+                ? 'bg-aurora-blue text-white shadow-lift'
                 : 'text-slate-400 hover:text-slate-100'
             }`}
           >
@@ -193,7 +194,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             }}
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
               mode === 'signin'
-                ? 'bg-amber-400 text-slate-950 shadow-sm'
+                ? 'bg-aurora-blue text-white shadow-lift'
                 : 'text-slate-400 hover:text-slate-100'
             }`}
           >
@@ -218,14 +219,14 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             >
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Full Name <span className="text-amber-400">*</span>
+                  Full Name <span className="text-aurora-magenta">*</span>
                 </label>
                 <input
                   type="text"
                   value={signUpName}
                   onChange={(e) => setSignUpName(e.target.value)}
                   placeholder="e.g. Ananya Sharma"
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-aurora-blue focus:outline-none"
                   disabled={isSubmitting}
                   autoFocus
                 />
@@ -233,14 +234,14 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
 
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Mobile / Contact Number <span className="text-amber-400">*</span>
+                  Mobile / Contact Number <span className="text-aurora-magenta">*</span>
                 </label>
                 <input
                   type="text"
                   value={signUpContact}
                   onChange={(e) => setSignUpContact(e.target.value)}
                   placeholder="e.g. +91 8091448752 or 8091448752"
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-aurora-blue focus:outline-none"
                   disabled={isSubmitting}
                 />
               </div>
@@ -252,7 +253,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                 <select
                   value={signUpLanguage}
                   onChange={(e) => setSignUpLanguage(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 focus:border-amber-400 focus:outline-none"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 focus:border-aurora-blue focus:outline-none"
                   disabled={isSubmitting}
                 >
                   <option value="en">English</option>
@@ -266,7 +267,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                 {...scaleTap}
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-2xl bg-amber-400 py-3.5 text-sm font-bold text-slate-950 transition-all duration-200 hover:bg-amber-300 disabled:opacity-60"
+                className="w-full rounded-2xl bg-aurora-blue py-3.5 text-sm font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:opacity-60"
               >
                 {isSubmitting ? 'Creating your account…' : 'Sign Up & Continue'}
               </motion.button>
@@ -278,9 +279,9 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     setMode('signin');
                     setError(null);
                   }}
-                  className="text-xs text-slate-400 hover:text-amber-300 transition-colors"
+                  className="text-xs text-slate-400 hover:text-cyan-300 transition-colors"
                 >
-                  Already have an account? <span className="font-semibold text-amber-300 underline underline-offset-2">Sign in here</span>
+                  Already have an account? <span className="font-semibold text-cyan-300 underline underline-offset-2">Sign in here</span>
                 </button>
               </div>
             </motion.form>
@@ -295,7 +296,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
             >
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Registered Contact Number <span className="text-amber-400">*</span>
+                  Registered Contact Number <span className="text-aurora-magenta">*</span>
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -303,7 +304,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     value={signInContact}
                     onChange={(e) => setSignInContact(e.target.value)}
                     placeholder="+91-90000-00001 or +91 8091448752"
-                    className="flex-1 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+                    className="flex-1 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 placeholder:text-slate-500 focus:border-aurora-blue focus:outline-none"
                     disabled={isSubmitting}
                     autoFocus
                   />
@@ -311,7 +312,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     {...scaleTap}
                     type="submit"
                     disabled={isSubmitting}
-                    className="rounded-2xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950 transition-all duration-200 hover:bg-amber-300 disabled:opacity-60"
+                    className="rounded-2xl bg-aurora-blue px-6 py-3 text-sm font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:opacity-60"
                   >
                     {isSubmitting ? 'Signing in…' : 'Sign In'}
                   </motion.button>
@@ -325,9 +326,9 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     setMode('signup');
                     setError(null);
                   }}
-                  className="text-xs text-slate-400 hover:text-amber-300 transition-colors"
+                  className="text-xs text-slate-400 hover:text-cyan-300 transition-colors"
                 >
-                  First time here? <span className="font-semibold text-amber-300 underline underline-offset-2">Sign up for an account</span>
+                  First time here? <span className="font-semibold text-cyan-300 underline underline-offset-2">Sign up for an account</span>
                 </button>
               </div>
             </motion.form>
@@ -346,7 +347,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
               <button
                 type="button"
                 onClick={() => switchToSignUpWithContact(notFoundContact)}
-                className="mt-2 text-xs font-semibold text-amber-300 hover:underline flex items-center gap-1"
+                className="mt-2 text-xs font-semibold text-cyan-300 hover:underline flex items-center gap-1"
               >
                 &rarr; Create new account with &ldquo;{notFoundContact}&rdquo; now
               </button>
@@ -371,7 +372,7 @@ export function LoginScreen({ onSignedIn, onOpenAssistant }: LoginScreenProps) {
                     setMode('signin');
                     void handleSignIn(undefined, user.contact);
                   }}
-                  className="rounded-full border border-slate-700 bg-slate-900 px-4 py-1.5 text-xs font-medium text-slate-300 transition-colors duration-200 hover:border-amber-500/30 hover:text-amber-300 disabled:opacity-60"
+                  className="rounded-full border border-slate-700 bg-slate-900 px-4 py-1.5 text-xs font-medium text-slate-300 transition-colors duration-200 hover:border-aurora-blue/40 hover:text-cyan-300 disabled:opacity-60"
                 >
                   Quick Sign in as {user.name}
                 </motion.button>

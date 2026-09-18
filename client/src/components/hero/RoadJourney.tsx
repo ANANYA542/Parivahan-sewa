@@ -70,6 +70,11 @@ function PermitIcon() {
   );
 }
 
+// Cycled across the aurora accent triad (blue / magenta / cyan) rather than
+// one flat color per stop — visually ties each checkpoint back to the same
+// gradient family as the rest of the brand instead of picking arbitrarily.
+const AURORA_CYCLE = ['#0080FF', '#FF1493', '#00FFFF'];
+
 const STOPS: ServiceStop[] = [
   { id: 'licence', label: 'Licence', t: 0.1, icon: <IdCardIcon /> },
   { id: 'registration', label: 'Registration', t: 0.31, icon: <VehicleIcon /> },
@@ -84,10 +89,10 @@ function CarIcon() {
       <ellipse cx="24" cy="21.5" rx="17" ry="1.6" fill="#000" opacity="0.15" />
       <path
         d="M6 16.5c0-1.4.8-2.6 2-3.2l3.4-1.7 3-4.3c.7-1 1.9-1.6 3.1-1.6h9c1.4 0 2.7.7 3.4 1.9l2.6 4.2 3.4.8c1.6.4 2.7 1.8 2.7 3.4v1.1c0 .9-.7 1.6-1.6 1.6h-1.1a3.4 3.4 0 1 0-6.7-.6H17.9a3.4 3.4 0 1 0-6.7.6H8a2 2 0 0 1-2-2z"
-        fill="#fbbf24"
+        fill="#0080FF"
       />
-      <path d="M15 9.2 13 13h7.4V8.6h-3.6c-.7 0-1.4.2-1.8.6Z" fill="#451a03" />
-      <path d="M22.4 8.6V13H30l-2-3.4a2 2 0 0 0-1.7-1H22.4Z" fill="#451a03" />
+      <path d="M15 9.2 13 13h7.4V8.6h-3.6c-.7 0-1.4.2-1.8.6Z" fill="#00264d" />
+      <path d="M22.4 8.6V13H30l-2-3.4a2 2 0 0 0-1.7-1H22.4Z" fill="#00264d" />
       <circle cx="14.5" cy="17.3" r="2.6" fill="#0f172a" />
       <circle cx="14.5" cy="17.3" r="1" fill="#94a3b8" />
       <circle cx="32.5" cy="17.3" r="2.6" fill="#0f172a" />
@@ -161,7 +166,7 @@ export function RoadJourney() {
         <path ref={pathRef} d={ROAD_PATH_D} fill="none" stroke="none" />
         <path d={ROAD_PATH_D} fill="none" stroke="rgba(148,163,184,0.18)" strokeWidth="22" strokeLinecap="round" />
         <path d={ROAD_PATH_D} fill="none" stroke="rgba(51,65,85,0.9)" strokeWidth="16" strokeLinecap="round" />
-        <path d={ROAD_PATH_D} fill="none" stroke="rgba(251,191,36,0.65)" strokeWidth="1.4" strokeDasharray="10 9" strokeLinecap="round" />
+        <path d={ROAD_PATH_D} fill="none" stroke="rgba(0,191,255,0.7)" strokeWidth="1.4" strokeDasharray="10 9" strokeLinecap="round" />
       </svg>
 
       {points.map((point, index) => {
@@ -178,7 +183,10 @@ export function RoadJourney() {
               ...({ '--glow-name': `glow-${stop.id}` } as Record<string, string>)
             }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-500/40 bg-slate-800 text-amber-300 shadow-sm">
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 shadow-sm"
+              style={{ border: `1px solid ${AURORA_CYCLE[index % AURORA_CYCLE.length]}66`, color: AURORA_CYCLE[index % AURORA_CYCLE.length] }}
+            >
               {stop.icon}
             </span>
             {/* hidden below sm — at narrow widths this whole diagram shrinks but the

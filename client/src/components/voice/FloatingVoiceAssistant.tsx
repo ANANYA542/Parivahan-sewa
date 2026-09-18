@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Mic, X } from 'lucide-react';
 import type { IntentResolution } from '@parivahan/shared';
 import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
 import { useVoiceCapture } from '../../lib/useVoiceCapture';
@@ -104,7 +105,7 @@ export function FloatingVoiceAssistant({ open, onOpenChange, onResolve }: Floati
                   aria-label="Close voice assistant"
                   className="rounded-lg p-1 text-slate-400 transition-colors hover:text-slate-200"
                 >
-                  ✕
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
               <p className="mt-1 text-xs leading-5 text-slate-400">Say what you need — "renew my PUC," "I was in an accident" — or type it.</p>
@@ -117,27 +118,28 @@ export function FloatingVoiceAssistant({ open, onOpenChange, onResolve }: Floati
                     if (event.key === 'Enter') void submit();
                   }}
                   placeholder="Speak or type your need"
-                  className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none placeholder:text-slate-500 focus:border-amber-400"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none placeholder:text-slate-500 focus:border-aurora-blue"
                 />
                 <button
                   type="button"
                   onClick={() => void voice.toggle()}
                   aria-pressed={voice.isListening}
                   aria-label="Speak instead of typing"
-                  className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-medium transition-colors duration-150 ${voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-amber-500/40'}`}
+                  className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-medium transition-colors duration-200 ${voice.isListening ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-slate-700 text-slate-300 hover:border-aurora-blue/40'}`}
                 >
-                  {voice.isListening ? 'Stop' : voice.isTranscribing ? '…' : '🎙'}
+                  {voice.isListening ? 'Stop' : voice.isTranscribing ? '…' : <Mic className="h-4 w-4" aria-hidden="true" />}
                 </button>
               </div>
-              <button
+              <motion.button
+                {...scaleTap}
                 type="button"
                 onClick={() => void submit()}
                 disabled={isResolving || !query.trim()}
-                className="mt-2 w-full rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 w-full rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isResolving ? 'Finding...' : 'Continue'}
-              </button>
-              {voice.isTranscribing ? <p className="mt-2 text-xs text-amber-300">Transcribing what you said…</p> : null}
+              </motion.button>
+              {voice.isTranscribing ? <p className="mt-2 text-xs text-cyan-300">Transcribing what you said…</p> : null}
               {result ? (
                 <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">
                   {result.clarificationNeeded ? 'I need a little more detail — try mentioning PUC, challan, or accident.' : `Matched: ${result.serviceName}. Taking you to that journey...`}
@@ -154,9 +156,9 @@ export function FloatingVoiceAssistant({ open, onOpenChange, onResolve }: Floati
           onClick={() => onOpenChange(!open)}
           aria-label={open ? 'Close voice assistant' : 'Open voice assistant'}
           aria-expanded={open}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-400 text-2xl text-slate-950 shadow-xl shadow-slate-950/50 ring-4 ring-slate-950/70 transition-colors duration-150 hover:bg-amber-300"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-aurora-blue text-white shadow-xl shadow-slate-950/50 ring-4 ring-slate-950/70 transition-all duration-200 hover:brightness-110 hover:shadow-lift"
         >
-          {open ? '✕' : '🎙'}
+          {open ? <X className="h-6 w-6" aria-hidden="true" /> : <Mic className="h-6 w-6" aria-hidden="true" />}
         </motion.button>
       </div>
     </>

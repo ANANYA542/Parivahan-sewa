@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ESCALATION_NOTE } from '@parivahan/shared';
 import type { CaseDetail, CaseRecord, CaseStatus } from '@parivahan/shared';
 import { DURATION, EASE_OUT, scaleTap } from '../../lib/motion';
+import { caseReference } from '../../lib/caseReference';
 
 const CLOSED_CASE_STATUSES = new Set(['resolved', 'rejected']);
 
@@ -77,9 +78,9 @@ export function CaseTimeline({ cases, selectedCase, selectedCaseId, isLoadingDet
                 type="button"
                 onClick={() => onSelect(caseRecord.caseId)}
                 aria-expanded={isSelectedRow}
-                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-colors duration-200 ${isSelectedRow ? 'rounded-b-none border-amber-500/30 bg-amber-500/10 text-slate-50' : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700'}`}
+                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition-colors duration-200 ${isSelectedRow ? 'rounded-b-none border-aurora-blue/30 bg-aurora-blue/10 text-slate-50' : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700'}`}
               >
-                <span>{caseRecord.caseId} · {caseRecord.type}</span>
+                <span>{caseReference(caseRecord.caseId)} · {caseRecord.type}</span>
                 <StatusBadge status={caseRecord.status} />
               </motion.button>
               {/* Plain conditional rendering, not AnimatePresence mode="wait" — same
@@ -88,14 +89,30 @@ export function CaseTimeline({ cases, selectedCase, selectedCaseId, isLoadingDet
                   stall, permanently hiding "Mark as urgent" / "Download my copy" for
                   the newly selected case. Reliability over the cross-fade here. */}
               {detailLoading ? (
-                <p className="rounded-b-2xl border border-t-0 border-amber-500/30 bg-slate-800 p-4 text-sm text-slate-400">Loading case history...</p>
+                <div className="rounded-b-2xl border border-t-0 border-aurora-blue/30 bg-slate-800 p-4">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <div className="space-y-2">
+                      <div className="skeleton h-4 w-40 rounded-md" />
+                      <div className="skeleton h-3 w-32 rounded-md" />
+                    </div>
+                    <div className="skeleton h-5 w-20 rounded-full" />
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <div className="skeleton h-8 w-28 rounded-xl" />
+                    <div className="skeleton h-8 w-32 rounded-xl" />
+                  </div>
+                  <div className="mt-4 space-y-3 border-l border-aurora-blue/30 pl-4">
+                    <div className="skeleton h-3 w-3/4 rounded-md" />
+                    <div className="skeleton h-3 w-2/3 rounded-md" />
+                  </div>
+                </div>
               ) : detailReady && selectedCase ? (
                 <motion.div
                   key={selectedCase.caseId}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DURATION.base, ease: EASE_OUT }}
-                  className="rounded-b-2xl border border-t-0 border-amber-500/30 bg-slate-800 p-4"
+                  className="rounded-b-2xl border border-t-0 border-aurora-blue/30 bg-slate-800 p-4"
                 >
                   <div className="flex flex-wrap justify-between gap-2">
                     <div>
@@ -123,7 +140,7 @@ export function CaseTimeline({ cases, selectedCase, selectedCaseId, isLoadingDet
                           disabled={isEscalating || isClosed || isAlreadyEscalated}
                           onClick={() => onEscalate(selectedCase.caseId)}
                           title={isClosed ? 'This case is already closed and cannot be escalated.' : isAlreadyEscalated ? 'This case has already been marked urgent.' : undefined}
-                          className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-300 transition-opacity duration-200 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-xl border border-aurora-blue/30 bg-aurora-blue/10 px-3 py-2 text-xs font-medium text-cyan-300 transition-opacity duration-200 hover:bg-aurora-blue/20 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {isEscalating ? 'Marking urgent…' : isAlreadyEscalated ? 'Already marked urgent' : 'Mark as urgent'}
                         </motion.button>
@@ -140,7 +157,7 @@ export function CaseTimeline({ cases, selectedCase, selectedCaseId, isLoadingDet
                     </motion.button>
                   </div>
                   {actionError ? <p className="mt-2 text-xs text-rose-300">{actionError}</p> : null}
-                  <div className="mt-4 space-y-3 border-l border-amber-500/30 pl-4">
+                  <div className="mt-4 space-y-3 border-l border-aurora-blue/30 pl-4">
                     {selectedCase.stageHistory.map((entry, index) => (
                       <motion.div
                         key={`${entry.stage}-${entry.at}`}
@@ -165,7 +182,7 @@ export function CaseTimeline({ cases, selectedCase, selectedCaseId, isLoadingDet
               <button
                 type="button"
                 onClick={onStartRequest}
-                className="mt-3 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-amber-300"
+                className="mt-3 rounded-xl bg-aurora-blue px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:shadow-lift"
               >
                 Start your first request
               </button>

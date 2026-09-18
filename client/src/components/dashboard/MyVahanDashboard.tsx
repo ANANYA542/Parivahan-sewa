@@ -19,14 +19,18 @@ function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
         <p className="text-sm font-semibold text-slate-50">{vehicle.registrationNumber}</p>
         <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-medium capitalize text-slate-300">{vehicle.vehicleType.replace(/-/g, ' ')}</span>
       </div>
-      <motion.div variants={staggerContainer} initial="hidden" animate="show" className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {cards.map((card) => (
-          <motion.div key={card.label} variants={fadeUp} className="rounded-xl border border-slate-800 bg-slate-800 p-3">
-            <div className="font-mono text-[10px] tracking-[0.13em] text-slate-400">{card.label}</div>
-            <div className={`mt-1 text-sm font-medium ${card.value === 'expired' ? 'text-rose-300' : 'text-slate-50'}`}>{card.value}</div>
-          </motion.div>
-        ))}
-      </motion.div>
+      {cards.length ? (
+        <motion.div variants={staggerContainer} initial="hidden" animate="show" className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {cards.map((card) => (
+            <motion.div key={card.label} variants={fadeUp} className="rounded-xl border border-slate-800 bg-slate-800 p-3">
+              <div className="font-mono text-[10px] tracking-[0.13em] text-slate-400">{card.label}</div>
+              <div className={`mt-1 text-sm font-medium ${card.value === 'expired' ? 'text-rose-300' : 'text-slate-50'}`}>{card.value}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      ) : (
+        <p className="mt-3 text-sm text-slate-500">No document details yet — complete a guided service to start building this vehicle's record.</p>
+      )}
     </div>
   );
 }

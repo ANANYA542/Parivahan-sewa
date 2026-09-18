@@ -102,7 +102,27 @@ async function fillForm2(caseDetail: CaseDetail): Promise<Uint8Array | null> {
   page1.drawText('X', { x: FORM_2_TICK_X, y: FORM_2_ROW_TICK_Y[rowIndex] ?? 483.53, size: 10, font: boldFont, color: INK });
 
   // Personal details (page 2)
-  drawFitted(page2, font, s(data.applicantFullName), 220.6, 449.61, 355);
+  // The First/Middle/Last Name row is only 16.3pt tall, filled almost
+  // entirely by the printed caption itself (verified via the table's own
+  // divider rects: verticals at x=252.2/x=359.9 and horizontals at
+  // y=326.8/343.1 bound exactly the caption's own line — there's no separate
+  // blank line above or below it to write on). The only blank space in this
+  // row is the ~40pt gap after each of the three captions, on the same
+  // line — matching how the Gender row just below places its tick marks
+  // directly after "Male"/"Female"/"Transgender" on their own shared line.
+  // The form collects a single `applicantFullName` string, so it's split on
+  // whitespace and distributed the way a person filling this by hand would:
+  // first word after "First Name", last word after "Last Name", anything in
+  // between after "Middle Name" — each constrained to its own after-caption
+  // gap so it can never run into the next column's caption.
+  const nameParts = s(data.applicantFullName).split(/\s+/).filter(Boolean);
+  if (nameParts.length) {
+    const [firstWord, ...rest] = nameParts;
+    const lastWord = rest.pop();
+    drawFitted(page2, font, firstWord ?? '', 215, 449.61, 35, 6.5);
+    if (rest.length) drawFitted(page2, font, rest.join(' '), 337, 449.61, 21, 6.5);
+    if (lastWord) drawFitted(page2, font, lastWord, 448, 449.61, 36, 6.5);
+  }
   drawFitted(page2, font, s(data.fatherOrGuardianName), 224.9, 435.39, 355);
   drawFitted(page2, font, s(data.dateOfBirth), 422.4, 398.91, 158);
   drawFitted(page2, font, s(data.mobileNumber), 428.8, 343.71, 150);
@@ -120,12 +140,20 @@ async function fillForm2(caseDetail: CaseDetail): Promise<Uint8Array | null> {
   }
 
   // Present Address — wrapped across the 7 printed address rows (House/Door/Flat through State).
+  // Column verticals for this table are at x=254.6 and x=370.2 (confirmed via
+  // the table's own divider rects), i.e. label | Present Address | Permanent
+  // Address. The old x=240 sat inside the label column itself, so on rows
+  // with a longer printed label ("Street/Locality/Police Station",
+  // "Location/Landmark") the wrapped address text started underneath — and
+  // visibly overlapped — the label's own text instead of the blank
+  // Present-Address cell to its right.
   const address = s(data.presentAddress);
   if (address) {
-    drawWrapped(page2, font, address, 240, 218.19, 122, 17.28, 7);
+    drawWrapped(page2, font, address, 258, 218.19, 108, 17.28, 7);
     const pinMatch = address.match(/\b\d{6}\b/);
     if (pinMatch) {
-      page3.drawText(pinMatch[0], { x: 240, y: 650.91, size: 7.5, font, color: INK });
+      // Same address table, continued onto page 3 — same column x as above.
+      page3.drawText(pinMatch[0], { x: 258, y: 650.91, size: 7.5, font, color: INK });
     }
   }
 
@@ -139,21 +167,29 @@ async function fillForm12(caseDetail: CaseDetail): Promise<Uint8Array | null> {
   const page = pdfDoc.getPage(0);
   const data = caseDetail.submissionData as Record<string, unknown>;
 
+  // Every one of these rows is a single printed line — label text followed
+  // directly by a dotted answer-line, both sharing one baseline (confirmed:
+  // the dot characters and the label text report the same top-down y via
+  // pdfplumber). The old y values sat exactly on that shared baseline, so the
+  // dots visually struck through the middle of each filled-in value. Shifted
+  // up by 9pt (a bit under one row's ~16pt spacing) to sit above the dotted
+  // line the way handwriting would, clear of the dots below.
+  const BASELINE_LIFT = 9;
   const rows: Array<[unknown, number]> = [
-    [data.applicantFullName, 603.22],
-    [data.fatherOrGuardianName, 587.05],
-    [data.applicantAddress, 571.18],
-    [data.businessPlace, 555.01],
-    [data.facilitiesAvailable, 538.83],
-    [data.staffQualifications, 522.96],
-    [data.trainingVehicleModels, 506.79],
-    [data.vehicleRegistrationMarks, 476.3],
-    [data.feeAmount, 461.94]
+    [data.applicantFullName, 603.22 + BASELINE_LIFT],
+    [data.fatherOrGuardianName, 587.05 + BASELINE_LIFT],
+    [data.applicantAddress, 571.18 + BASELINE_LIFT],
+    [data.businessPlace, 555.01 + BASELINE_LIFT],
+    [data.facilitiesAvailable, 538.83 + BASELINE_LIFT],
+    [data.staffQualifications, 522.96 + BASELINE_LIFT],
+    [data.trainingVehicleModels, 506.79 + BASELINE_LIFT],
+    [data.vehicleRegistrationMarks, 476.3 + BASELINE_LIFT],
+    [data.feeAmount, 461.94 + BASELINE_LIFT]
   ];
   for (const [value, y] of rows) {
     drawFitted(page, font, s(value), 460, y, 120);
   }
-  drawFitted(page, font, todayIndian(), 107.4, 428.38, 80);
+  drawFitted(page, font, todayIndian(), 107.4, 428.38 + BASELINE_LIFT, 80);
 
   return pdfDoc.save();
 }
@@ -165,8 +201,14 @@ async function fillForm18(caseDetail: CaseDetail): Promise<Uint8Array | null> {
   const page = pdfDoc.getPage(0);
   const data = caseDetail.submissionData as Record<string, unknown>;
 
-  drawFitted(page, font, s(data.certificateNumber), 392, 569.35, 83, 6.5);
-  drawFitted(page, font, s(data.certificateValidUpto), 84, 555.0, 38, 6);
+  // As with FORM-12, every one of these is a printed sentence/label running
+  // directly into a dotted answer-line on the same baseline (confirmed via
+  // pdfplumber: e.g. "Rs." and "Address...." report the same top-down y the
+  // old values were drawn at) — so the dots struck through the filled-in
+  // text. Lifted above the line by the same margin used for FORM-12.
+  const BASELINE_LIFT = 9;
+  drawFitted(page, font, s(data.certificateNumber), 392, 569.35 + BASELINE_LIFT, 83, 6.5);
+  drawFitted(page, font, s(data.certificateValidUpto), 84, 555.0 + BASELINE_LIFT, 38, 6);
   // The paragraph between "...specified below:—" (y=303 top-down) and "I/We
   // hereby deposit..." (y=398) is fully printed legal text with no blank
   // line of its own for this — confirmed by reading every word in that
@@ -177,9 +219,9 @@ async function fillForm18(caseDetail: CaseDetail): Promise<Uint8Array | null> {
     drawFitted(page, font, 'Circumstances of loss/damage (as declared by the applicant):', 68, 331.46, 459, 6.5);
     drawWrapped(page, font, s(data.lossCircumstances), 68, 323.46, 459, 8, 3, 6.5);
   }
-  drawFitted(page, font, s(data.feeAmount), 276, 433.57, 36, 6.5);
-  drawFitted(page, font, s(data.applicantAddress), 318, 371.03, 208, 7.5);
-  drawFitted(page, font, todayIndian(), 107.4, 337.46, 150);
+  drawFitted(page, font, s(data.feeAmount), 276, 433.57 + BASELINE_LIFT, 36, 6.5);
+  drawFitted(page, font, s(data.applicantAddress), 318, 371.03 + BASELINE_LIFT, 208, 7.5);
+  drawFitted(page, font, todayIndian(), 107.4, 337.46 + BASELINE_LIFT, 150);
 
   return pdfDoc.save();
 }

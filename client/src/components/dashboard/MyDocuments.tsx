@@ -4,6 +4,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { CaseRecord, ServiceDefinition } from '@parivahan/shared';
 import { downloadCaseAcknowledgement, getCaseDocumentBlob } from '../../lib/api';
+import { caseReference } from '../../lib/caseReference';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
@@ -78,7 +79,7 @@ function DocumentCard({ caseRecord, serviceName }: { caseRecord: CaseRecord; ser
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-semibold text-slate-900">{serviceName}</p>
-      <p className="mt-0.5 text-xs text-slate-500">Completed {displayDate(caseRecord.createdAt)} · {caseRecord.caseId}</p>
+      <p className="mt-0.5 text-xs text-slate-500">Completed {displayDate(caseRecord.createdAt)} · {caseReference(caseRecord.caseId)}</p>
       <div className="mt-3 flex h-44 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
         {previewSrc ? (
           <img src={previewSrc} alt={`First page preview of the ${serviceName} document`} className="h-full w-full object-contain" />

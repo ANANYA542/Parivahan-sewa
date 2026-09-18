@@ -11,7 +11,7 @@ import {
   type ServiceDefinition,
   type SubmissionData
 } from '@parivahan/shared';
-import { DURATION, EASE_OUT, scaleTap } from './lib/motion';
+import { DURATION, EASE_OUT, scaleTap, pageTransition } from './lib/motion';
 import { SEVERITY_STYLES } from './lib/severity';
 import { loadSession, saveSession, clearSession } from './lib/authStore';
 import { navigateTo, navigateToJourney, useAppRoute, type AppRoute } from './lib/appRoutes';
@@ -511,9 +511,16 @@ export default function App() {
             can get stuck, permanently blocking the next route's content from ever mounting.
             That's a real dead end in the primary citizen journey, not a cosmetic issue, so
             the fade-transition is removed rather than risk it — reliability over polish here. */}
-        <main key={route}>
+        {/* Mount-only entrance (initial+animate, no exit/AnimatePresence) — the
+            same reliability fix already applied elsewhere in this codebase
+            (GuidedNavigator, CaseTimeline): an exit animation on this element
+            has been reproduced getting stuck under real click timing, which
+            would permanently block the next route from ever appearing. A
+            plain fade+slide-in on mount gets the DESIGN.md page-transition
+            feel without that failure mode. */}
+        <motion.main key={route} variants={pageTransition} initial="hidden" animate="show">
           {pageContent()}
-        </main>
+        </motion.main>
         {userId && !['health', 'pollution', 'fuel'].includes(route) ? (
           <div className="mt-7">
             <StandingAgentPanel userId={userId} onIntentFromVoice={async (text) => { await handleResolveIntent(text); }} />

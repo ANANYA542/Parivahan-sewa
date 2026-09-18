@@ -48,7 +48,7 @@ export function MobilityScoreCard({ snapshot }: MobilityScoreCardProps) {
               cy="50"
               r="42"
               fill="none"
-              stroke="#fbbf24"
+              stroke="#0080FF"
               strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -56,7 +56,7 @@ export function MobilityScoreCard({ snapshot }: MobilityScoreCardProps) {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-3xl font-semibold text-amber-300">{score !== undefined ? <ScoreValue score={score} /> : '--'}</div>
+            <div className="text-3xl font-semibold text-cyan-300">{score !== undefined ? <ScoreValue score={score} /> : '--'}</div>
             <div className="text-[10px] uppercase tracking-wide text-slate-400">/ 100</div>
           </div>
         </div>

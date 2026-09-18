@@ -26,16 +26,16 @@ body {
 }
 
 .font-mono {
-  font-family: "DM Mono", ui-monospace, monospace;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
 ::selection {
-  background: rgba(251, 191, 36, 0.25);
-  color: #451a03;
+  background: rgba(0, 128, 255, 0.3);
+  color: #eafcff;
 }
 
 :focus-visible {
-  outline: 2px solid rgba(251, 191, 36, 0.8);
+  outline: 2px solid rgba(0, 191, 255, 0.85);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -46,6 +46,68 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* Aurora UI (DESIGN.md) — the shared vibrant-gradient vocabulary every
+   screen draws from, so "aurora" reads as one system rather than each
+   component inventing its own gradient stops. Keyframes are declared here
+   directly (not left to Tailwind's generated `animate-*` utilities) because
+   these classes reference them via plain `animation:` in this file, which
+   Tailwind's content-scanning wouldn't otherwise pick up as "used". */
+@keyframes aurora-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.aurora-text {
+  background: linear-gradient(90deg, #0080ff 0%, #ff1493 50%, #00ffff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aurora-drift 10s ease-in-out infinite;
+}
+
+.aurora-ring:focus-visible {
+  outline-color: rgba(255, 20, 147, 0.85);
+}
+
+.aurora-mesh-bg {
+  position: relative;
+  isolation: isolate;
+}
+
+.aurora-mesh-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    radial-gradient(at 15% 20%, rgba(0, 128, 255, 0.35) 0, transparent 55%),
+    radial-gradient(at 85% 15%, rgba(255, 20, 147, 0.28) 0, transparent 50%),
+    radial-gradient(at 50% 90%, rgba(0, 255, 255, 0.22) 0, transparent 55%);
+  background-size: 200% 200%;
+  animation: aurora-drift 12s ease-in-out infinite;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 191, 255, 0.14), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
 }
 
 /* Darkens the free OpenStreetMap raster tiles to match the app's dark theme,

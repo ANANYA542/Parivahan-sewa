@@ -48,7 +48,7 @@ export function MobilityNudges({ notifications, onAction, onMarkRead }: Mobility
                   in GuidedNavigator. */}
               <div className="mt-3 flex flex-wrap items-center gap-4">
                 {notification.actionServiceId ? (
-                  <button type="button" onClick={() => onAction(notification.actionServiceId!)} className="min-h-[1.75rem] text-sm font-medium text-amber-300 hover:text-amber-200">
+                  <button type="button" onClick={() => onAction(notification.actionServiceId!)} className="min-h-[1.75rem] text-sm font-medium text-cyan-300 hover:text-cyan-200">
                     Review recommended service
                   </button>
                 ) : null}

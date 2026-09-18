@@ -1,3 +1,4 @@
+import { Stethoscope } from 'lucide-react';
 import type { IdentityBundle, MobilityIntelligenceSnapshot, VehicleRecord } from '@parivahan/shared';
 import { documentStatusStyle } from '../../lib/documentStatus';
 
@@ -20,26 +21,35 @@ function scoreTone(score: number): string {
 function VehicleHealthCard({ vehicle }: { vehicle: VehicleRecord }) {
   const entries = Object.entries(vehicle.documentStatus);
   const atRisk = entries.filter(([, value]) => documentStatusStyle(value).tone !== 'good' && documentStatusStyle(value).tone !== 'neutral').length;
+  const hasDocumentData = entries.length > 0;
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-slate-50">{vehicle.registrationNumber}</p>
-        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${atRisk ? 'bg-amber-500/10 text-amber-300' : 'bg-emerald-500/10 text-emerald-300'}`}>
-          {atRisk ? `${atRisk} document${atRisk === 1 ? '' : 's'} need attention` : 'All documents in order'}
+        <span
+          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+            !hasDocumentData ? 'bg-slate-800 text-slate-400' : atRisk ? 'bg-amber-500/10 text-amber-300' : 'bg-emerald-500/10 text-emerald-300'
+          }`}
+        >
+          {!hasDocumentData ? 'No document data on file' : atRisk ? `${atRisk} document${atRisk === 1 ? '' : 's'} need attention` : 'All documents in order'}
         </span>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {entries.map(([field, value]) => {
-          const style = documentStatusStyle(value);
-          return (
-            <div key={field} className="rounded-xl border border-slate-800 bg-slate-800 p-3">
-              <div className="font-mono text-[10px] tracking-[0.13em] text-slate-400">{formatLabel(field).toUpperCase()}</div>
-              <div className={`mt-1 text-sm font-medium ${style.text}`}>{style.label}</div>
-            </div>
-          );
-        })}
-      </div>
+      {hasDocumentData ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {entries.map(([field, value]) => {
+            const style = documentStatusStyle(value);
+            return (
+              <div key={field} className="rounded-xl border border-slate-800 bg-slate-800 p-3">
+                <div className="font-mono text-[10px] tracking-[0.13em] text-slate-400">{formatLabel(field).toUpperCase()}</div>
+                <div className={`mt-1 text-sm font-medium ${style.text}`}>{style.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm text-slate-400">Complete a guided service for this vehicle to start building its document record.</p>
+      )}
     </div>
   );
 }
@@ -56,7 +66,9 @@ export function VehicleHealthView({ identity, mobilityIntelligence, onAddVehicle
   if (identity && vehicles.length === 0) {
     return (
       <div className="mt-7 flex flex-col items-center rounded-2xl border border-dashed border-slate-800 px-6 py-16 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-xl" aria-hidden="true">🩺</span>
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800">
+          <Stethoscope className="h-6 w-6 text-aurora-blue" aria-hidden="true" />
+        </span>
         <p className="mt-4 text-sm font-medium text-slate-300">No linked vehicle yet.</p>
         <p className="mt-1 max-w-sm text-sm leading-6 text-slate-400">Link a vehicle to see its document health here.</p>
         <button type="button" onClick={onAddVehicle} className="mt-5 rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 transition-colors duration-150 hover:border-slate-600 hover:text-slate-50">
