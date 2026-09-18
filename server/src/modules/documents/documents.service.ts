@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
 import type { CaseDetail } from '@parivahan/shared';
 import { fillOfficialForm } from './official-form-filler.js';
 
@@ -10,8 +10,10 @@ const INK = rgb(0.11, 0.14, 0.13);
 const MUTED = rgb(0.35, 0.38, 0.36);
 const ACCENT = rgb(0.72, 0.44, 0.11);
 const ACCENT_GREEN = rgb(0.13, 0.42, 0.26);
+const ACCENT_RED = rgb(0.72, 0.14, 0.14);
 const LINE = rgb(0.84, 0.85, 0.81);
 const BAND = rgb(0.97, 0.95, 0.9);
+const VALUE_X = MARGIN + 160;
 
 function formatFieldName(field: string) {
   return field.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase());
@@ -22,6 +24,25 @@ function formatValue(value: unknown): string {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (value === null || value === undefined || value === '') return '—';
   return String(value);
+}
+
+/** Greedy word-wrap so a narrative/description answer reads as a paragraph instead of running off the page edge on one line. */
+function wrapLines(font: PDFFont, text: string, size: number, maxWidth: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (!words.length) return [text];
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (!current || font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
 }
 
 interface DocumentSection {
@@ -38,9 +59,15 @@ interface DocumentSection {
  */
 function accidentSections(data: Record<string, unknown>): DocumentSection[] {
   const pick = (...fields: string[]): Array<[string, string]> =>
-    fields.filter((field) => field in data).map((field) => [formatFieldName(field), formatValue(data[field])]);
+    fields.filter((field) => field in data && formatValue(data[field]) !== '—').map((field) => [formatFieldName(field), formatValue(data[field])]);
 
   return [
+    // Narrative and medical status lead the document — both are optional at
+    // intake, but when a citizen provided them they're the most operationally
+    // important content on the page (what a police desk or insurer reads
+    // first), not just another row among structured fields.
+    { title: 'Narrative', rows: pick('incidentNarrative') },
+    { title: 'Medical emergency', rows: pick('medicalEmergencyDetails') },
     { title: 'When & where', rows: pick('location', 'time') },
     { title: 'Conditions', rows: pick('areaType', 'weather', 'collisionType', 'hitAndRun') },
     { title: 'People & vehicles', rows: pick('injurySeverity', 'vehiclesInvolved') }
@@ -150,11 +177,16 @@ export class DocumentsService {
     }
 
     for (const section of sections) {
-      drawText(section.title, { font: boldFont, size: 11.5, color: ACCENT_GREEN });
+      drawText(section.title, { font: boldFont, size: 11.5, color: section.title === 'Medical emergency' ? ACCENT_RED : ACCENT_GREEN });
       y -= 18;
       for (const [label, value] of section.rows) {
+        const lines = wrapLines(bodyFont, value, 10.5, PAGE_WIDTH - MARGIN - VALUE_X);
         drawText(label, { font: boldFont, size: 9.5, color: MUTED });
-        drawText(value, { size: 10.5, x: MARGIN + 160 });
+        drawText(lines[0] ?? '', { size: 10.5, x: VALUE_X });
+        for (let i = 1; i < lines.length; i++) {
+          y -= 14;
+          drawText(lines[i]!, { size: 10.5, x: VALUE_X });
+        }
         y -= 17;
         if (y < MARGIN + 110) break; // stay on one page; overflow is truncated rather than mis-laid-out
       }

@@ -83,6 +83,8 @@ function guidedApplicationService(
     officialForm?: ServiceDefinition['officialForm'];
     detailFields?: string[];
     fieldOptions?: Record<string, string[]>;
+    optionalFields?: string[];
+    multilineFields?: string[];
   } = {}
 ): ServiceDefinition {
   const vehicleStep = options.requiresVehicle ? [{ id: 'vehicle', title: 'Select vehicle', fields: ['vehicleId'] }] : [];
@@ -103,7 +105,9 @@ function guidedApplicationService(
     requiredDocuments: options.requiredDocuments ?? CATEGORY_DEFAULT_DOCUMENTS[category] ?? ['Identity proof'],
     estimatedTime: '5-10 minutes',
     ...(options.officialForm ? { officialForm: options.officialForm } : {}),
-    ...(options.fieldOptions ? { fieldOptions: options.fieldOptions } : {})
+    ...(options.fieldOptions ? { fieldOptions: options.fieldOptions } : {}),
+    ...(options.optionalFields ? { optionalFields: options.optionalFields } : {}),
+    ...(options.multilineFields ? { multilineFields: options.multilineFields } : {})
   };
 }
 
@@ -160,7 +164,8 @@ export const serviceCatalog: ServiceDefinition[] = [
     estimatedTime: '8-12 minutes',
     fieldOptions: {
       issueType: ['Incorrect vehicle number', 'Wrong violation recorded', 'Vehicle not at that location/time', 'Already paid', 'Other']
-    }
+    },
+    multilineFields: ['reason']
   },
   {
     // Field vocabulary (area type, weather, collision type, hit & run,
@@ -177,9 +182,10 @@ export const serviceCatalog: ServiceDefinition[] = [
     delivery: 'guided',
     steps: [
       { id: 'preview', title: 'Review incident intake', fields: [] },
+      { id: 'narrative', title: 'Narrate what happened', fields: ['incidentNarrative'] },
       { id: 'incident', title: 'Capture incident details', fields: ['location', 'time'] },
       { id: 'context', title: 'Describe the conditions', fields: ['areaType', 'weather', 'collisionType', 'hitAndRun'] },
-      { id: 'people', title: 'Record people and vehicles involved', fields: ['injurySeverity', 'vehiclesInvolved'] },
+      { id: 'people', title: 'Record people and vehicles involved', fields: ['injurySeverity', 'medicalEmergencyDetails', 'vehiclesInvolved'] },
       { id: 'confirm', title: 'Submit report', fields: ['declaration'] }
     ],
     requiredDocuments: ['Incident details'],
@@ -190,7 +196,14 @@ export const serviceCatalog: ServiceDefinition[] = [
       collisionType: ['Vehicle to vehicle', 'Vehicle to pedestrian', 'Vehicle to two-wheeler / bicycle', 'Hit parked vehicle or object', 'Vehicle overturned', 'Other'],
       hitAndRun: ['No', 'Yes'],
       injurySeverity: ['No injury', 'Minor injury', 'Grievous injury (hospitalised)', 'Fatal']
-    }
+    },
+    // Both free-form: a full-incident narrative up front (spoken or typed,
+    // in the citizen's own words, ahead of the structured questions — the
+    // way you'd actually describe an accident) and medical-emergency detail
+    // that only makes sense to ask when there's an injury to describe.
+    // Neither should block submission if left blank.
+    optionalFields: ['incidentNarrative', 'medicalEmergencyDetails'],
+    multilineFields: ['incidentNarrative', 'medicalEmergencyDetails']
   },
   {
     serviceId: 'svc-grievance-report',
@@ -208,7 +221,8 @@ export const serviceCatalog: ServiceDefinition[] = [
     estimatedTime: '5-8 minutes',
     fieldOptions: {
       category: ['Service delay', 'Incorrect fee or challan', 'Staff conduct', 'Document or records error', 'Other']
-    }
+    },
+    multilineFields: ['description']
   },
   guidedApplicationService('svc-learner-licence', 'Learner Licence', 'driving-licence', 'Apply for a learner licence through Sarathi.', SARATHI_SERVICE_URL, { officialForm: FORM_2, detailFields: FORM_2_DETAIL_FIELDS, fieldOptions: FORM_2_FIELD_OPTIONS }),
   guidedApplicationService('svc-driving-licence', 'Driving Licence', 'driving-licence', 'Apply for a new driving licence through Sarathi.', SARATHI_SERVICE_URL, { officialForm: FORM_2, detailFields: FORM_2_DETAIL_FIELDS, fieldOptions: FORM_2_FIELD_OPTIONS }),
@@ -229,7 +243,23 @@ export const serviceCatalog: ServiceDefinition[] = [
   guidedApplicationService('svc-rc-renewal', 'Renewal of Registration', 'vehicle-registration', 'Renew a vehicle registration certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-duplicate-rc', 'Duplicate RC', 'vehicle-registration', 'Apply for a duplicate registration certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-transfer-ownership', 'Transfer of Ownership', 'vehicle-registration', 'Apply to transfer vehicle ownership.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
-  guidedApplicationService('svc-change-vehicle-address', 'Change of Vehicle Address', 'vehicle-registration', 'Update the address recorded on a vehicle registration.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
+  // Form 27's own text ("kept the said motor vehicle in this State... apply
+  // for the assignment of a new registration mark") is specifically the
+  // real CMVR form for re-registering a vehicle moved to a new state — the
+  // closest real official counterpart to this service in docs/. The vehicle
+  // itself is already selected via `requiresVehicle`, so its own reg. number
+  // and type aren't re-asked; these are the fields the form asks for beyond
+  // that, read directly off its own text.
+  guidedApplicationService('svc-change-vehicle-address', 'Change of Vehicle Address', 'vehicle-registration', 'Update the address recorded on a vehicle registration.', VAHAN_SERVICE_URL, {
+    requiresVehicle: true,
+    officialForm: { formNumber: 'Form 27', title: 'Application for Assignment of New Registration Mark to a Motor Vehicle', path: '/forms/FORM-27.pdf' },
+    detailFields: ['chassisNumber', 'engineNumber', 'currentRegistrationState', 'newAddress', 'financierName', 'mobileNumber'],
+    // The form's own text branches here — "*The vehicle is not subject to an
+    // agreement of hire-purchase/lease/hypothecation" is one of two
+    // strike-out options, so a financier only applies to some vehicles.
+    optionalFields: ['financierName'],
+    requiredDocuments: ['Registration Certificate', 'Fitness Certificate', 'No Objection Certificate from current registering authority', 'Identity proof']
+  }),
   guidedApplicationService('svc-vehicle-conversion', 'Conversion of Vehicle', 'vehicle-registration', 'Apply to change the vehicle type or class.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-rc-cancellation', 'RC Cancellation', 'vehicle-registration', 'Apply to cancel a vehicle registration certificate.', VAHAN_SERVICE_URL, { requiresVehicle: true }),
   guidedApplicationService('svc-fancy-number', 'Online Fancy Number', 'vehicle-registration', 'Bid for and purchase a choice registration number.', OTHER_SERVICES_URL),

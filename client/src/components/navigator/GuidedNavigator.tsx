@@ -20,7 +20,8 @@ function formatField(field: string) {
   return field.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase());
 }
 
-function fieldIsComplete(field: string, values: Record<string, string>) {
+function fieldIsComplete(field: string, values: Record<string, string>, optionalFields: string[]) {
+  if (optionalFields.includes(field)) return true;
   return field === 'acknowledgement' || field === 'declaration' ? values[field] === 'true' : Boolean(values[field]?.trim());
 }
 
@@ -114,9 +115,10 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
   }
 
   const activeService = service;
+  const optionalFields = activeService.optionalFields ?? [];
   const currentStep = activeService.steps[currentStepIndex];
   const isLastStep = currentStepIndex === activeService.steps.length - 1;
-  const currentStepComplete = currentStep ? currentStep.fields.every((field) => fieldIsComplete(field, values)) : false;
+  const currentStepComplete = currentStep ? currentStep.fields.every((field) => fieldIsComplete(field, values, optionalFields)) : false;
 
   function setField(field: string, value: string) {
     setValues((previous) => ({ ...previous, [field]: value }));
@@ -125,7 +127,7 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
 
   async function submit() {
     const allFields = activeService.steps.flatMap((step) => step.fields);
-    if (!allFields.every((field) => fieldIsComplete(field, values))) {
+    if (!allFields.every((field) => fieldIsComplete(field, values, optionalFields))) {
       setError('Please complete the required fields before submitting.');
       return;
     }
@@ -280,11 +282,36 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
 
                   const isVoiceActiveHere = voiceField === field;
                   const canDictate = field !== 'attachments';
+                  const isOptional = optionalFields.includes(field);
+                  const isMultiline = activeService.multilineFields?.includes(field) ?? false;
+                  const sharedInputClassName = "min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-aurora-blue";
+                  const FIELD_PLACEHOLDERS: Record<string, string> = {
+                    incidentNarrative: 'Describe what happened, in your own words — you can also use the mic',
+                    medicalEmergencyDetails: 'Who was affected, what injuries, any first aid or hospital involved',
+                    attachments: 'Comma-separated file names'
+                  };
                   return (
-                    <label key={field} className="block text-sm text-slate-300">
-                      {formatField(field)}
-                      <div className="mt-2 flex gap-2">
-                        <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={field === 'attachments' ? 'Comma-separated file names' : `Enter ${formatField(field).toLowerCase()}`} className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none transition-colors duration-200 placeholder:text-slate-400 focus:border-aurora-blue" />
+                    <div key={field}>
+                      {field === 'medicalEmergencyDetails' ? (
+                        <div className="mb-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                          If anyone needs immediate medical help, call <strong>108</strong> (ambulance) or <strong>112</strong> now — don&apos;t wait to finish this form.
+                        </div>
+                      ) : null}
+                      <label className="block text-sm text-slate-300">
+                        {formatField(field)}
+                        {isOptional ? <span className="ml-1.5 text-xs text-slate-500">(optional)</span> : null}
+                        <div className="mt-2 flex gap-2">
+                          {isMultiline ? (
+                            <textarea
+                              value={values[field] ?? ''}
+                              onChange={(event) => setField(field, event.target.value)}
+                              placeholder={FIELD_PLACEHOLDERS[field] ?? `Enter ${formatField(field).toLowerCase()}`}
+                              rows={4}
+                              className={`${sharedInputClassName} resize-y`}
+                            />
+                          ) : (
+                            <input value={values[field] ?? ''} onChange={(event) => setField(field, event.target.value)} placeholder={FIELD_PLACEHOLDERS[field] ?? `Enter ${formatField(field).toLowerCase()}`} className={sharedInputClassName} />
+                          )}
                         {canDictate ? (
                           <motion.button
                             {...scaleTap}
@@ -316,8 +343,9 @@ export function GuidedNavigator({ service, vehicles, isSubmitting, onSubmit, ini
                           </motion.button>
                         ) : null}
                       </div>
-                      {isVoiceActiveHere && voice.isTranscribing ? <p className="mt-1.5 text-xs text-cyan-300">Transcribing what you said…</p> : null}
-                    </label>
+                        {isVoiceActiveHere && voice.isTranscribing ? <p className="mt-1.5 text-xs text-cyan-300">Transcribing what you said…</p> : null}
+                      </label>
+                    </div>
                   );
                 })}
               </div>

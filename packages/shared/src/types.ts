@@ -75,6 +75,21 @@ export interface ServiceDefinition {
      */
     fillable?: boolean;
   };
+  /**
+   * Field names (from any step) that a citizen may leave blank — the guided
+   * flow still asks for them, but "Continue"/"Submit" doesn't block on them.
+   * Used for genuinely optional context (a free-form narrative, medical
+   * details when nobody was hurt) rather than every field defaulting to
+   * required and forcing an empty answer just to proceed.
+   */
+  optionalFields?: string[];
+  /**
+   * Field names that collect more than a short answer (a narrative, a
+   * description) — rendered as a multi-line textarea in the guided flow
+   * instead of a single-line input, still with the same voice-dictation
+   * button every text field gets.
+   */
+  multilineFields?: string[];
 }
 
 export interface IntentResolution {
